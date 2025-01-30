@@ -1676,6 +1676,8 @@ CUSTOMER#
 
 ## Проверки:
 
+## Проверка работоспособности L3 (работает ли VRF - Hand-off)
+
 <details>
   <summary> dc01-leaf01#show ip bgp vrf RED </summary>
 
