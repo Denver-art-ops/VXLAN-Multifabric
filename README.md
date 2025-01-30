@@ -1676,6 +1676,23 @@ CUSTOMER#
 
 ## Проверки:
 
+## Проверка работоспособности L2 (работает ли VLAN- Hand-off)
+
+<details>
+  <summary> VPCS> ping 10.88.10.60 -t </summary>
+
+```
+VPCS> ping 10.88.10.60 -t
+
+84 bytes from 10.88.10.60 icmp_seq=1 ttl=64 time=84.080 ms
+84 bytes from 10.88.10.60 icmp_seq=2 ttl=64 time=105.162 ms
+84 bytes from 10.88.10.60 icmp_seq=3 ttl=64 time=87.270 ms
+84 bytes from 10.88.10.60 icmp_seq=4 ttl=64 time=156.643 ms
+84 bytes from 10.88.10.60 icmp_seq=5 ttl=64 time=88.106 ms
+84 bytes from 10.88.10.60 icmp_seq=6 ttl=64 time=91.032 ms
+```
+</details> 
+
 ## Проверка работоспособности L3 (работает ли VRF - Hand-off)
 
 <details>
