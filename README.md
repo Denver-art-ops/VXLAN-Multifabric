@@ -1677,6 +1677,75 @@ CUSTOMER#
 ## Проверки:
 
 <details>
+  <summary> dc01-leaf01#show ip bgp vrf RED </summary>
+
+```
+
+dc01-leaf01#show ip bgp vrf RED
+BGP routing table information for VRF RED
+Router identifier 10.88.20.2, local AS number 65501
+Route status codes: s - suppressed contributor, * - valid, > - active, E - ECMP head, e - ECMP
+                    S - Stale, c - Contributing to ECMP, b - backup, L - labeled-unicast
+                    % - Pending BGP convergence
+Origin codes: i - IGP, e - EGP, ? - incomplete
+RPKI Origin Validation codes: V - valid, I - invalid, U - unknown
+AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
+
+          Network                Next Hop              Metric  AIGP       LocPref Weight  Path
+ * >      1.1.1.0/32             -                     -       -          -       0       i
+ * >Ec    2.2.2.0/32             10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    2.2.2.0/32             10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    2.2.2.0/32             10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    2.2.2.0/32             10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >      10.88.10.0/24          -                     -       -          -       0       i
+ *  Ec    10.88.10.0/24          10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.88.10.0/24          10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.88.10.0/24          10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.88.10.0/24          10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *        10.88.10.0/24          10.11.1.4             0       -          100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
+ *        10.88.10.0/24          10.11.1.4             0       -          100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
+ * >      10.88.20.0/24          -                     -       -          -       0       i
+ *  Ec    10.88.20.0/24          10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.88.20.0/24          10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.88.20.0/24          10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.88.20.0/24          10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *        10.88.20.0/24          10.11.1.4             0       -          100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
+ *        10.88.20.0/24          10.11.1.4             0       -          100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
+```
+</details> 
+
+<details>
+  <summary> dc01-leaf01#show ip route vrf RED </summary>
+
+```
+
+dc01-leaf01#show ip route vrf RED
+
+VRF: RED
+Codes: C - connected, S - static, K - kernel,
+       O - OSPF, IA - OSPF inter area, E1 - OSPF external type 1,
+       E2 - OSPF external type 2, N1 - OSPF NSSA external type 1,
+       N2 - OSPF NSSA external type2, B - Other BGP Routes,
+       B I - iBGP, B E - eBGP, R - RIP, I L1 - IS-IS level 1,
+       I L2 - IS-IS level 2, O3 - OSPFv3, A B - BGP Aggregate,
+       A O - OSPF Summary, NG - Nexthop Group Static Route,
+       V - VXLAN Control Service, M - Martian,
+       DH - DHCP client installed default route,
+       DP - Dynamic Policy Route, L - VRF Leaked,
+       G  - gRIBI, RC - Route Cache Route
+
+Gateway of last resort is not set
+
+ C        1.1.1.0/32 is directly connected, Loopback3
+ B I      2.2.2.0/32 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                             via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ C        10.88.10.0/24 is directly connected, Vlan101
+ C        10.88.20.0/24 is directly connected, Vlan102
+```
+</details> 
+
+
+<details>
   <summary> dc01-leaf01#ping vrf RED 2.2.2.0 </summary>
 
 ```
