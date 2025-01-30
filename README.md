@@ -1676,4 +1676,22 @@ CUSTOMER#
 
 ## Проверки:
 
+<details>
+  <summary> dc01-leaf01#ping vrf RED 2.2.2.0 </summary>
+
+```
+dc01-leaf01#ping vrf RED 2.2.2.0
+PING 2.2.2.0 (2.2.2.0) 72(100) bytes of data.
+80 bytes from 2.2.2.0: icmp_seq=1 ttl=64 time=108 ms
+80 bytes from 2.2.2.0: icmp_seq=2 ttl=64 time=104 ms
+80 bytes from 2.2.2.0: icmp_seq=3 ttl=64 time=221 ms
+80 bytes from 2.2.2.0: icmp_seq=4 ttl=64 time=232 ms
+80 bytes from 2.2.2.0: icmp_seq=5 ttl=64 time=313 ms
+
+--- 2.2.2.0 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 51ms
+rtt min/avg/max/mdev = 104.053/196.098/313.475/79.907 ms, pipe 5, ipg/ewma 12.963/158.176 ms
+```
+</details> 
+
 # ВЫВОДЫ:
