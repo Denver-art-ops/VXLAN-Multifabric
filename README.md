@@ -3495,4 +3495,68 @@ traceroute to 4.4.4.0 (4.4.4.0), 30 hops max, 60 byte packets
 ```
 </details> 
 
+### Проверим что обе Фабрики могут достучаться до сети 8.8.8.8/32 в обоих VRF:
+
+<details>
+  <summary> dc01-leaf01#ping vrf RED 8.8.8.8 </summary>
+
+```
+dc01-leaf01#ping vrf RED 8.8.8.8
+PING 8.8.8.8 (8.8.8.8) 72(100) bytes of data.
+80 bytes from 8.8.8.8: icmp_seq=1 ttl=63 time=112 ms
+80 bytes from 8.8.8.8: icmp_seq=2 ttl=63 time=105 ms
+80 bytes from 8.8.8.8: icmp_seq=3 ttl=63 time=109 ms
+80 bytes from 8.8.8.8: icmp_seq=4 ttl=63 time=106 ms
+80 bytes from 8.8.8.8: icmp_seq=5 ttl=63 time=104 ms
+
+--- 8.8.8.8 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 58ms
+rtt min/avg/max/mdev = 104.721/107.678/112.817/3.021 ms, pipe 5, ipg/ewma 14.657/110.128 ms
+
+```
+</details> 
+
+<details>
+  <summary> dc01-leaf01#ping vrf GREEN 8.8.8.8 </summary>
+
+```
+dc01-leaf01#
+dc01-leaf01#ping vrf GREEN 8.8.8.8
+PING 8.8.8.8 (8.8.8.8) 72(100) bytes of data.
+80 bytes from 8.8.8.8: icmp_seq=1 ttl=63 time=104 ms
+80 bytes from 8.8.8.8: icmp_seq=2 ttl=63 time=100 ms
+80 bytes from 8.8.8.8: icmp_seq=3 ttl=63 time=99.4 ms
+80 bytes from 8.8.8.8: icmp_seq=4 ttl=63 time=101 ms
+80 bytes from 8.8.8.8: icmp_seq=5 ttl=63 time=101 ms
+
+--- 8.8.8.8 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 54ms
+rtt min/avg/max/mdev = 99.470/101.506/104.018/1.528 ms, pipe 5, ipg/ewma 13.713/102.747 ms
+```
+</details> 
+
+<details>
+  <summary> dc01-leaf01#traceroute vrf RED 8.8.8.8 </summary>
+
+```
+dc01-leaf01#traceroute vrf RED 8.8.8.8
+traceroute to 8.8.8.8 (8.8.8.8), 30 hops max, 60 byte packets
+ 1  10.88.20.4 (10.88.20.4)  57.124 ms  58.609 ms  73.265 ms
+ 2  8.8.8.8 (8.8.8.8)  106.968 ms  130.195 ms  137.701 ms
+```
+</details> 
+
+<details>
+  <summary> dc01-leaf01# traceroute vrf GREEN 8.8.8.8 </summary>
+
+```
+dc01-leaf01#
+dc01-leaf01#traceroute vrf GREEN 8.8.8.8
+traceroute to 8.8.8.8 (8.8.8.8), 30 hops max, 60 byte packets
+ 1  10.11.6.0 (10.11.6.0)  135.494 ms  135.435 ms  161.127 ms
+ 2  8.8.8.8 (8.8.8.8)  201.881 ms  210.595 ms  235.764 ms
+
+```
+</details>
+
 # ВЫВОДЫ:
