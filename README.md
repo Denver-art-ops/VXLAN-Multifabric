@@ -3483,7 +3483,7 @@ rtt min/avg/max/mdev = 107.274/123.451/132.339/8.665 ms, pipe 5, ipg/ewma 13.664
 ### И сделаем traceroute:
 
 <details>
-  <summary> dc01-bleaf01#traceroute vrf GREEN 10.88.20.20 source 10.99.10.4 </summary>
+  <summary> traceroute vrf RED 4.4.4.0 source 1.1.1.0 </summary>
 
 ```
 dc01-leaf01#traceroute vrf RED 4.4.4.0 source 1.1.1.0
