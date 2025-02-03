@@ -5,8 +5,74 @@
 Обьединить две фабрики по технологии Multifabric (VLAN Hand-off, VRF Hand-off)
 как наиболее распостраненное решение у отечественных вендоров
 
-### Принципы назначения IP адресов, адресное пространство
-Описаны в документе: [IP_Plan.md](IP_Plan.md)
+### Адресное пространство
+
+|DC #    |#SPINE  |Тип адреса|Hostname устройства|Устройство/Устройства     |имя интерфейса|IP адрес      |Comments |
+|--------|--------|----------|-------------------|--------------------------|--------------|--------------|---------|
+|DC#1    |SPINE01 |loopback  |dc01-spine01#      |SPINE01                   |loopback 1    |10.11.1.1/32  |         |
+|DC#1    |SPINE02 |loopback  |dc01-spine02#      |SPINE02                   |loopback 1    |10.11.1.2/32  |         |
+|DC#1    |LEAF01  |loopback  |dc01-leaf01#       |LEAF01                    |loopback 1    |10.11.1.3/32  |         |
+|DC#1    |LEAF02  |loopback  |dc01-leaf02#       |LEAF02                    |loopback 1    |10.11.1.4/32  |         |
+|DC#1    |BLEAF01 |loopback  |dc01-bleaf01#      |BLEAF01                   |loopback 1    |10.11.1.5/32  |         |
+|DC#1    |BLEAF02 |loopback  |dc01-bleaf02#      |BLEAF02                   |loopback 1    |10.11.1.6/32  |         |
+|DC#2    |SPINE01 |loopback  |dc02-spine01#      |SPINE01                   |loopback 1    |10.11.1.7/32  |         |
+|DC#2    |SPINE02 |loopback  |dc02-spine02#      |SPINE02                   |loopback 1    |10.11.1.8/32  |         |
+|DC#2    |LEAF01  |loopback  |dc02-leaf01#       |LEAF01                    |loopback 1    |10.11.1.9/32  |         |
+|DC#2    |LEAF02  |loopback  |dc02-leaf02#       |LEAF02                    |loopback 1    |10.11.1.10/32 |         |
+|DC#2    |BLEAF01 |loopback  |dc02-bleaf01#      |BLEAF01                   |loopback 1    |10.11.1.11/32 |         |
+|DC#2    |BLEAF02 |loopback  |dc02-bleaf02#      |BLEAF02                   |loopback 1    |10.11.1.12/32 |         |
+|Internet|Internet|loopback  |Internet           |Internet                  |loopback 1    |10.11.1.250/32|         |
+|резерв  |резерв  |резерв    |резерв             |резерв                    |              |10.11.1.0/25  |         |
+|DC#1    |SPINE01 |loopback  |dc01-spine01#      |SPINE01                   |loopback 2    |10.11.2.1/32  |         |
+|DC#1    |SPINE02 |loopback  |dc01-spine02#      |SPINE02                   |loopback 2    |10.11.2.2/32  |         |
+|DC#1    |LEAF01  |loopback  |dc01-leaf01#       |LEAF01                    |loopback 2    |10.11.2.3/32  |         |
+|DC#1    |LEAF02  |loopback  |dc01-leaf02#       |LEAF02                    |loopback 2    |10.11.2.4/32  |         |
+|DC#1    |BLEAF01 |loopback  |dc01-bleaf01#      |BLEAF01                   |loopback 2    |10.11.2.5/32  |         |
+|DC#1    |BLEAF02 |loopback  |dc01-bleaf02#      |BLEAF02                   |loopback 2    |10.11.2.6/32  |         |
+|DC#2    |SPINE01 |loopback  |dc02-spine01#      |SPINE01                   |loopback 2    |10.11.2.128/32|         |
+|DC#2    |SPINE02 |loopback  |dc02-spine02#      |SPINE02                   |loopback 2    |10.11.2.129/32|         |
+|DC#2    |LEAF01  |loopback  |dc02-leaf01#       |LEAF01                    |loopback 2    |10.11.2.130/32|         |
+|DC#2    |LEAF02  |loopback  |dc02-leaf02#       |LEAF02                    |loopback 2    |10.11.2.131/32|         |
+|DC#2    |BLEAF01 |loopback  |dc02-bleaf01#      |BLEAF01                   |loopback 2    |10.11.2.132/32|         |
+|DC#2    |BLEAF02 |loopback  |dc02-bleaf02#      |BLEAF02                   |loopback 2    |10.11.2.133/32|         |
+|резерв  |резерв  |резерв    |резерв             |резерв                    |резерв        |10.11.2.0/24  |         |
+|DC#1    |SPINE01 |PtP_link  |dc01-spine01#      |SPINE01->LEAF01           |eth 1         |10.11.3.0/31  |         |
+|DC#1    |SPINE01 |PtP_link  |dc01-spine01#      |SPINE01->LEAF02           |eth 2         |10.11.3.2/31  |         |
+|DC#1    |SPINE01 |PtP_link  |dc01-spine01#      |SPINE01->BLEAF01          |eth 3         |10.11.3.4/31  |         |
+|DC#1    |SPINE01 |PtP_link  |dc01-spine01#      |SPINE01->BLEAF02          |eth 4         |10.11.3.6/31  |         |
+|DC#1    |SPINE02 |PtP_link  |dc01-spine02#      |SPINE02->LEAF01           |eth 5         |10.11.3.8/31  |         |
+|DC#1    |SPINE02 |PtP_link  |dc01-spine02#      |SPINE02->LEAF02           |eth 6         |10.11.3.10/31 |         |
+|DC#1    |SPINE02 |PtP_link  |dc01-spine02#      |SPINE02->BLEAF01          |eth 7         |10.11.3.12/31 |         |
+|DC#1    |SPINE02 |PtP_link  |dc01-spine02#      |SPINE02->BLEAF02          |eth 8         |10.11.3.14/31 |         |
+|DC#2    |SPINE01 |PtP_link  |dc02-spine01#      |SPINE01->LEAF01           |eth 1         |10.11.3.0/31  |         |
+|DC#2    |SPINE01 |PtP_link  |dc02-spine01#      |SPINE01->LEAF02           |eth 2         |10.11.3.2/31  |         |
+|DC#2    |SPINE01 |PtP_link  |dc02-spine01#      |SPINE01->BLEAF01          |eth 3         |10.11.3.4/31  |         |
+|DC#2    |SPINE01 |PtP_link  |dc02-spine01#      |SPINE01->BLEAF02          |eth 4         |10.11.3.6/31  |         |
+|DC#2    |SPINE02 |PtP_link  |dc02-spine02#      |SPINE02->LEAF01           |eth 5         |10.11.3.8/31  |         |
+|DC#2    |SPINE02 |PtP_link  |dc02-spine02#      |SPINE02->LEAF02           |eth 6         |10.11.3.10/31 |         |
+|DC#2    |SPINE02 |PtP_link  |dc02-spine02#      |SPINE02->BLEAF01          |eth 7         |10.11.3.12/31 |         |
+|DC#2    |SPINE02 |PtP_link  |dc02-spine02#      |SPINE02->BLEAF02          |eth 8         |10.11.3.14/31 |         |
+|DCI     |BLEAF01 |PtP_link  |dc01-pod01-bleaf01#|DC01-BLEAF01->DC02-BLEAF01|              |10.11.4.0/31  |vrf RED  |
+|DCI     |BLEAF01 |PtP_link  |dc01-pod01-bleaf01#|DC01-BLEAF01->DC02-BLEAF02|              |10.11.4.2/31  |vrf RED  |
+|DCI     |BLEAF02 |PtP_link  |dc01-pod01-bleaf02#|DC01-BLEAF02->DC02-BLEAF01|              |10.11.4.4/31  |vrf RED  |
+|DCI     |BLEAF02 |PtP_link  |dc01-pod01-bleaf02#|DC01-BLEAF02->DC02-BLEAF02|              |10.11.4.6/31  |vrf RED  |
+|DCI     |BLEAF01 |PtP_link  |dc01-pod01-bleaf01#|DC01-BLEAF01->DC02-BLEAF01|              |10.11.4.8/31  |VRF GREEN|
+|DCI     |BLEAF01 |PtP_link  |dc01-pod01-bleaf01#|DC01-BLEAF01->DC02-BLEAF02|              |10.11.4.10/31 |VRF GREEN|
+|DCI     |BLEAF02 |PtP_link  |dc01-pod01-bleaf02#|DC01-BLEAF02->DC02-BLEAF01|              |10.11.4.12/31 |VRF GREEN|
+|DCI     |BLEAF02 |PtP_link  |dc01-pod01-bleaf02#|DC01-BLEAF02->DC02-BLEAF02|              |10.11.4.14/31 |VRF GREEN|
+|Internet|Internet|PtP_link  |DC01-BLEAF01#      |DC01-BLEAF01->Internet    |              |10.11.5.0/31  |VRF RED  |
+|Internet|Internet|PtP_link  |DC01-BLEAF02#      |DC01-BLEAF02->Internet    |              |10.11.5.2/31  |VRF RED  |
+|Internet|Internet|PtP_link  |DC02-BLEAF01#      |DC02-BLEAF01->Internet    |              |10.11.5.4/31  |VRF RED  |
+|        |        |          |DC02-BLEAF02#      |DC02-BLEAF02->Internet    |              |10.11.5.6/31  |VRF RED  |
+|Internet|Internet|PtP_link  |DC01-BLEAF01#      |DC01-BLEAF01->Internet    |              |10.11.6.0/31  |VRF GREEN|
+|Internet|Internet|PtP_link  |DC01-BLEAF02#      |DC01-BLEAF02->Internet    |              |10.11.6.2/31  |VRF GREEN|
+|        |        |          |DC02-BLEAF01#      |DC02-BLEAF01->Internet    |              |10.11.6.4/31  |VRF GREEN|
+|Internet|Internet|PtP_link  |DC02-BLEAF02#      |DC02-BLEAF02->Internet    |              |10.11.6.6/31  |VRF GREEN|
+|DCI     |SPINE02 |L2        |dc01-pod01-spine02#|DC01-BLEAF01->DC02-BLEAF01|              |L2            |         |
+|DCI     |SPINE02 |L2        |dc01-pod01-spine02#|DC01-BLEAF01->DC02-BLEAF02|              |L2            |         |
+|DCI     |SPINE02 |L2        |dc01-pod01-spine02#|DC01-BLEAF02->DC02-BLEAF01|              |L2            |         |
+|DCI     |SPINE02 |L2        |dc01-pod01-spine02#|DC01-BLEAF02->DC02-BLEAF02|              |L2            |         |
+
 
 ### Итоговая схема
 ![Topology.png](Topology.png)
