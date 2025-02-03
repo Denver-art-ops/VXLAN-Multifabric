@@ -14,24 +14,22 @@
 ## Конфигурации устройств в DataCenter1 (DC01):
 
 <details>
-  <summary> SPINE01 </summary>
+  <summary> dc01-spine01 </summary>
 
 ```
-dc01-pod01-spine01#show running-config
+dc01-spine01#show running-config
 ! Command: show running-config
-! device: dc01-pod01-spine01 (vEOS-lab, EOS-4.29.2F)
+! device: dc01-spine01 (vEOS-lab, EOS-4.29.2F)
 !
 ! boot system flash:/vEOS-lab.swi
 !
 no aaa root
 !
-username Denis secret sha512 $6$y4fXjrcDJ1eVI4aJ$JCiZRs.t0Kx0f3BRqUioTguW5BhatcFeAsKQQkUQaOWS7LWhHXRRKGyeSLP8xF/aU3LOubedln.MaGkP91arx.
-!
 transceiver qsfp default-mode 4x10G
 !
 service routing protocols model multi-agent
 !
-hostname dc01-pod01-spine01
+hostname dc01-spine01
 !
 spanning-tree mode mstp
 !
@@ -39,83 +37,29 @@ interface Ethernet1
    description =LINK-TO_LEAF01=
    no switchport
    ip address 10.11.3.0/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
 !
 interface Ethernet2
    description =LINK-TO_LEAF02=
    no switchport
    ip address 10.11.3.2/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
 !
 interface Ethernet3
-   description =LINK_TO_LEAF03=
+   description =LINK_TO_BLEAF01=
    no switchport
    ip address 10.11.3.4/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
 !
 interface Ethernet4
-   description =LINK-TO_LEAF04=
+   description =LINK-TO_BLEAF02=
    no switchport
    ip address 10.11.3.6/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
 !
 interface Ethernet5
-   description =LINK-TO_SLEAF01=
-   no switchport
-   ip address 10.11.3.8/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
 !
 interface Ethernet6
-   description =LINK-TO_SLEAF02=
-   no switchport
-   ip address 10.11.3.10/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
 !
 interface Ethernet7
-   description =LINK-TO_BLEAF01=
-   no switchport
-   ip address 10.11.3.12/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
 !
 interface Ethernet8
-   description =LINK_TO_BLEAF02=
-   no switchport
-   ip address 10.11.3.14/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
-!
-interface Ethernet9
-   description =LINK-TO_BGW01=
-   no switchport
-   ip address 10.11.3.16/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
-!
-interface Ethernet10
-   description =LINK_TO_BGW02=
-   no switchport
-   ip address 10.11.3.18/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
-!
-interface Ethernet11
 !
 interface Loopback1
    ip address 10.11.1.1/32
@@ -124,6 +68,7 @@ interface Loopback2
    ip address 10.11.2.1/32
 !
 interface Management1
+   ip address 172.16.0.254/24
 !
 ip routing
 !
@@ -134,101 +79,49 @@ ip prefix-list PL_1
 route-map MAP_1 permit 10
    match ip address prefix-list PL_1
 !
-router bgp 4259840001
+router bgp 65501
    router-id 10.11.1.1
    graceful-restart restart-time 300
-   maximum-paths 4 ecmp 64
-   neighbor OVERLAY peer group
-   neighbor OVERLAY next-hop-unchanged
-   neighbor OVERLAY update-source Loopback1
-   neighbor OVERLAY ebgp-multihop 3
-   neighbor OVERLAY send-community extended
-   neighbor 10.11.1.3 peer group OVERLAY
-   neighbor 10.11.1.3 remote-as 4259905000
+   bgp route-reflector preserve-attributes
+   maximum-paths 6 ecmp 64
+   neighbor EVPN peer group
+   neighbor EVPN remote-as 65501
+   neighbor EVPN update-source Loopback1
+   neighbor EVPN route-reflector-client
+   neighbor EVPN route-reflector cluster-id 10.11.1.1
+   neighbor EVPN password 7 FvNSlY/ujVE=
+   neighbor EVPN send-community extended
+   neighbor underlay_ibgp peer group
+   neighbor underlay_ibgp remote-as 65501
+   neighbor underlay_ibgp next-hop-self
+   neighbor underlay_ibgp route-reflector-client
+   neighbor underlay_ibgp route-reflector cluster-id 10.11.1.1
+   neighbor underlay_ibgp route-map MAP_1 in
+   neighbor underlay_ibgp password 7 e620vg94KQ0=
+   neighbor underlay_ibgp maximum-routes 12000 warning-only
+   neighbor 10.11.1.3 peer group EVPN
    neighbor 10.11.1.3 description LEAF01_Lo1
-   neighbor 10.11.1.3 ebgp-multihop
-   neighbor 10.11.1.4 peer group OVERLAY
-   neighbor 10.11.1.4 remote-as 4259905001
+   neighbor 10.11.1.4 peer group EVPN
    neighbor 10.11.1.4 description LEAF02_Lo1
-   neighbor 10.11.1.5 peer group OVERLAY
-   neighbor 10.11.1.5 remote-as 4259905002
-   neighbor 10.11.1.5 description LEAF03_Lo1
-   neighbor 10.11.1.6 peer group OVERLAY
-   neighbor 10.11.1.6 remote-as 4259905003
-   neighbor 10.11.1.6 description LEAF04_Lo1
-   neighbor 10.11.1.7 peer group OVERLAY
-   neighbor 10.11.1.7 remote-as 4259905101
-   neighbor 10.11.1.7 description SLEAF01_Lo1
-   neighbor 10.11.1.8 peer group OVERLAY
-   neighbor 10.11.1.8 remote-as 4259905102
-   neighbor 10.11.1.8 description SLEAF02_Lo1
-   neighbor 10.11.1.9 peer group OVERLAY
-   neighbor 10.11.1.9 remote-as 4259905201
-   neighbor 10.11.1.9 description BLEAF01_Lo1
-   neighbor 10.11.1.10 peer group OVERLAY
-   neighbor 10.11.1.10 remote-as 4259905202
-   neighbor 10.11.1.10 description BLEAF02_Lo1
-   neighbor 10.11.1.11 peer group OVERLAY
-   neighbor 10.11.1.11 remote-as 4259905301
-   neighbor 10.11.1.11 description BGW01_Lo1
-   neighbor 10.11.1.12 peer group OVERLAY
-   neighbor 10.11.1.12 remote-as 4259905302
-   neighbor 10.11.1.12 description BGW02_Lo1
-   neighbor 10.11.3.1 remote-as 4259905000
-   neighbor 10.11.3.1 bfd
+   neighbor 10.11.1.5 peer group EVPN
+   neighbor 10.11.1.5 description BLEAF01_Lo1
+   neighbor 10.11.1.6 peer group EVPN
+   neighbor 10.11.1.6 description BLEAF02_Lo1
+   neighbor 10.11.3.1 peer group underlay_ibgp
    neighbor 10.11.3.1 description LEAF01
-   neighbor 10.11.3.1 route-map MAP_1 in
-   neighbor 10.11.3.1 password 7 m3FjC6w2d6o=
-   neighbor 10.11.3.3 remote-as 4259905001
-   neighbor 10.11.3.3 bfd
+   neighbor 10.11.3.3 peer group underlay_ibgp
    neighbor 10.11.3.3 description LEAF02
-   neighbor 10.11.3.3 route-map MAP_1 in
-   neighbor 10.11.3.3 password 7 kZcBlBo8kLo=
-   neighbor 10.11.3.5 remote-as 4259905002
-   neighbor 10.11.3.5 bfd
-   neighbor 10.11.3.5 description LEAF03
-   neighbor 10.11.3.5 route-map MAP_1 in
-   neighbor 10.11.3.5 password 7 kGZWqyCmNl4=
-   neighbor 10.11.3.7 remote-as 4259905003
-   neighbor 10.11.3.7 bfd
-   neighbor 10.11.3.7 description LEAF04
-   neighbor 10.11.3.7 route-map MAP_1 in
-   neighbor 10.11.3.7 password 7 JVIkOCtPnDM=
-   neighbor 10.11.3.9 remote-as 4259905101
-   neighbor 10.11.3.9 bfd
-   neighbor 10.11.3.9 description SLEAF01
-   neighbor 10.11.3.9 route-map MAP_1 in
-   neighbor 10.11.3.9 password 7 mGBWW5zgOEE=
-   neighbor 10.11.3.11 remote-as 4259905102
-   neighbor 10.11.3.11 bfd
-   neighbor 10.11.3.11 description SLEAF02
-   neighbor 10.11.3.11 route-map MAP_1 in
-   neighbor 10.11.3.11 password 7 jSSRC/e2y7E=
-   neighbor 10.11.3.13 remote-as 4259905201
-   neighbor 10.11.3.13 bfd
-   neighbor 10.11.3.13 description BLEAF01
-   neighbor 10.11.3.13 route-map MAP_1 in
-   neighbor 10.11.3.13 password 7 IVk4JXzOQBg=
-   neighbor 10.11.3.15 remote-as 4259905202
-   neighbor 10.11.3.15 bfd
-   neighbor 10.11.3.15 description BLEAF02
-   neighbor 10.11.3.15 route-map MAP_1 in
-   neighbor 10.11.3.15 password 7 7aYBVA/JiU8=
-   neighbor 10.11.3.17 remote-as 4259905301
-   neighbor 10.11.3.17 bfd
-   neighbor 10.11.3.17 description BGW01
-   neighbor 10.11.3.17 route-map MAP_1 in
-   neighbor 10.11.3.17 password 7 e01wILS8YqY=
-   neighbor 10.11.3.19 remote-as 4259905302
-   neighbor 10.11.3.19 bfd
-   neighbor 10.11.3.19 description BGW02
-   neighbor 10.11.3.19 route-map MAP_1 in
-   neighbor 10.11.3.19 password 7 hBf7gSNWhXU=
+   neighbor 10.11.3.5 peer group underlay_ibgp
+   neighbor 10.11.3.5 description BLEAF01
+   neighbor 10.11.3.7 peer group underlay_ibgp
+   neighbor 10.11.3.7 description BLEAF02
    !
    address-family evpn
-      neighbor OVERLAY activate
+      neighbor EVPN activate
    !
    address-family ipv4
+      no neighbor EVPN activate
+      neighbor underlay_ibgp activate
       network 10.11.1.1/32
       network 10.11.3.0/24
       graceful-restart
@@ -239,12 +132,12 @@ end
 </details> 
 
 <details>
-  <summary>SPINE02 </summary>
+  <summary>dc01-spine02 </summary>
 
 ```
-dc01-pod01-spine02#show running-config
+dc01-spine02#show running-config
 ! Command: show running-config
-! device: dc01-pod01-spine02 (vEOS-lab, EOS-4.29.2F)
+! device: dc01-spine02 (vEOS-lab, EOS-4.29.2F)
 !
 ! boot system flash:/vEOS-lab.swi
 !
@@ -254,96 +147,46 @@ transceiver qsfp default-mode 4x10G
 !
 service routing protocols model multi-agent
 !
-hostname dc01-pod01-spine02
+hostname dc01-spine02
 !
 spanning-tree mode mstp
 !
 interface Ethernet1
    description =LINK-TO_LEAF01=
    no switchport
-   ip address 10.11.3.40/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
+   ip address 10.11.3.8/31
 !
 interface Ethernet2
-   description =LINK_TO_LEAF02=
+   description =LINK-TO_LEAF02=
    no switchport
-   ip address 10.11.3.42/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
+   ip address 10.11.3.10/31
 !
 interface Ethernet3
-   description =LINK_TO_LEAF03=
-   no switchport
-   ip address 10.11.3.44/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
-!
-interface Ethernet4
-   description =LINK_TO_LEAF04=
-   no switchport
-   ip address 10.11.3.46/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
-!
-interface Ethernet5
-   description =LINK_TO_SLEAF01=
-   no switchport
-   ip address 10.11.3.48/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
-!
-interface Ethernet6
-   description =LINK_TO_SLEAF02=
-   no switchport
-   ip address 10.11.3.50/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
-!
-interface Ethernet7
    description =LINK_TO_BLEAF01=
    no switchport
-   ip address 10.11.3.52/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
+   ip address 10.11.3.12/31
+!
+interface Ethernet4
+   description =LINK-TO_BLEAF02=
+   no switchport
+   ip address 10.11.3.14/31
+!
+interface Ethernet5
+!
+interface Ethernet6
+!
+interface Ethernet7
 !
 interface Ethernet8
-   description =LINK_TO_BLEAF02=
-   no switchport
-   ip address 10.11.3.54/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
-!
-interface Ethernet9
-   description =LINK_TO_BGW01=
-   no switchport
-   ip address 10.11.3.56/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
-!
-interface Ethernet10
-   description =LINK_TO_BGW02=
-   no switchport
-   ip address 10.11.3.58/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
-!
-interface Ethernet11
 !
 interface Loopback1
    ip address 10.11.1.2/32
 !
+interface Loopback2
+   ip address 10.11.2.2/32
+!
 interface Management1
+   ip address 172.16.0.253/24
 !
 ip routing
 !
@@ -354,127 +197,64 @@ ip prefix-list PL_1
 route-map MAP_1 permit 10
    match ip address prefix-list PL_1
 !
-router bgp 4259840002
+router bgp 65501
    router-id 10.11.1.2
    graceful-restart restart-time 300
-   maximum-paths 4 ecmp 64
-   neighbor OVERLAY peer group
-   neighbor OVERLAY next-hop-unchanged
-   neighbor OVERLAY update-source Loopback1
-   neighbor OVERLAY ebgp-multihop 3
-   neighbor OVERLAY send-community extended
-   neighbor 10.11.1.3 peer group OVERLAY
-   neighbor 10.11.1.3 remote-as 4259905000
+   maximum-paths 6 ecmp 64
+   neighbor EVPN peer group
+   neighbor EVPN remote-as 65501
+   neighbor EVPN update-source Loopback1
+   neighbor EVPN route-reflector-client
+   neighbor EVPN route-reflector cluster-id 10.11.1.1
+   neighbor EVPN password 7 FvNSlY/ujVE=
+   neighbor EVPN send-community extended
+   neighbor underlay_ibgp peer group
+   neighbor underlay_ibgp remote-as 65501
+   neighbor underlay_ibgp next-hop-self
+   neighbor underlay_ibgp route-reflector-client
+   neighbor underlay_ibgp route-reflector cluster-id 10.11.1.1
+   neighbor underlay_ibgp route-map MAP_1 in
+   neighbor underlay_ibgp password 7 e620vg94KQ0=
+   neighbor underlay_ibgp maximum-routes 12000 warning-only
+   neighbor 10.11.1.1 remote-as 65501
+   neighbor 10.11.1.3 peer group EVPN
    neighbor 10.11.1.3 description LEAF01_Lo1
-   neighbor 10.11.1.3 ebgp-multihop 2
-   neighbor 10.11.1.4 peer group OVERLAY
-   neighbor 10.11.1.4 remote-as 4259905001
+   neighbor 10.11.1.4 peer group EVPN
    neighbor 10.11.1.4 description LEAF02_Lo1
-   neighbor 10.11.1.5 peer group OVERLAY
-   neighbor 10.11.1.5 remote-as 4259905002
-   neighbor 10.11.1.5 description LEAF03_Lo1
-   neighbor 10.11.1.6 peer group OVERLAY
-   neighbor 10.11.1.6 remote-as 4259905003
-   neighbor 10.11.1.6 description LEAF04_Lo1
-   neighbor 10.11.1.7 peer group OVERLAY
-   neighbor 10.11.1.7 remote-as 4259905101
-   neighbor 10.11.1.7 description SLEAF01_Lo1
-   neighbor 10.11.1.8 peer group OVERLAY
-   neighbor 10.11.1.8 remote-as 4259905102
-   neighbor 10.11.1.8 description SLEAF02_Lo1
-   neighbor 10.11.1.9 peer group OVERLAY
-   neighbor 10.11.1.9 remote-as 4259905201
-   neighbor 10.11.1.9 description BLEAF01_Lo1
-   neighbor 10.11.1.10 peer group OVERLAY
-   neighbor 10.11.1.10 remote-as 4259905202
-   neighbor 10.11.1.10 description BLEAF02_Lo1
-   neighbor 10.11.1.11 peer group OVERLAY
-   neighbor 10.11.1.11 remote-as 4259905301
-   neighbor 10.11.1.11 description BGW01_Lo1
-   neighbor 10.11.1.12 peer group OVERLAY
-   neighbor 10.11.1.12 remote-as 4259905302
-   neighbor 10.11.1.12 description BGW02_Lo1
-   neighbor 10.11.3.41 remote-as 4259905000
-   neighbor 10.11.3.41 bfd
-   neighbor 10.11.3.41 description LEAF01
-   neighbor 10.11.3.41 route-map MAP_1 in
-   neighbor 10.11.3.41 password 7 X1D+FhPL62M=
-   neighbor 10.11.3.43 remote-as 4259905001
-   neighbor 10.11.3.43 bfd
-   neighbor 10.11.3.43 description LEAF02
-   neighbor 10.11.3.43 route-map MAP_1 in
-   neighbor 10.11.3.43 password 7 v+YQEIAfTLQ=
-   neighbor 10.11.3.45 remote-as 4259905002
-   neighbor 10.11.3.45 bfd
-   neighbor 10.11.3.45 description LEAF03
-   neighbor 10.11.3.45 route-map MAP_1 in
-   neighbor 10.11.3.45 password 7 48bUQaGsEyA=
-   neighbor 10.11.3.47 remote-as 4259905003
-   neighbor 10.11.3.47 bfd
-   neighbor 10.11.3.47 description LEAF04
-   neighbor 10.11.3.47 route-map MAP_1 in
-   neighbor 10.11.3.47 password 7 2L3nuAWmD7Y=
-   neighbor 10.11.3.49 remote-as 4259905101
-   neighbor 10.11.3.49 bfd
-   neighbor 10.11.3.49 description SLEAF01
-   neighbor 10.11.3.49 route-map MAP_1 in
-   neighbor 10.11.3.49 password 7 69qWpBfLKT0=
-   neighbor 10.11.3.51 remote-as 4259905102
-   neighbor 10.11.3.51 bfd
-   neighbor 10.11.3.51 description SLEAF02
-   neighbor 10.11.3.51 route-map MAP_1 in
-   neighbor 10.11.3.51 password 7 X1D+FhPL62M=
-   neighbor 10.11.3.53 remote-as 4259905201
-   neighbor 10.11.3.53 bfd
-   neighbor 10.11.3.53 description BLEAF01
-   neighbor 10.11.3.53 route-map MAP_1 in
-   neighbor 10.11.3.53 password 7 v+YQEIAfTLQ=
-   neighbor 10.11.3.55 remote-as 4259905202
-   neighbor 10.11.3.55 bfd
-   neighbor 10.11.3.55 description BLEAF02
-   neighbor 10.11.3.55 route-map MAP_1 in
-   neighbor 10.11.3.55 password 7 48bUQaGsEyA=
-   neighbor 10.11.3.57 remote-as 4259905301
-   neighbor 10.11.3.57 bfd
-   neighbor 10.11.3.57 description BGW01
-   neighbor 10.11.3.57 route-map MAP_1 in
-   neighbor 10.11.3.57 password 7 2L3nuAWmD7Y=
-   neighbor 10.11.3.59 remote-as 4259905302
-   neighbor 10.11.3.59 bfd
-   neighbor 10.11.3.59 description BGW02
-   neighbor 10.11.3.59 route-map MAP_1 in
-   neighbor 10.11.3.59 password 7 69qWpBfLKT0=
+   neighbor 10.11.1.5 peer group EVPN
+   neighbor 10.11.1.5 description BLEAF01_Lo1
+   neighbor 10.11.1.6 peer group EVPN
+   neighbor 10.11.1.6 description BLEAF02_Lo1
+   neighbor 10.11.3.9 peer group underlay_ibgp
+   neighbor 10.11.3.9 description LEAF01
+   neighbor 10.11.3.11 peer group underlay_ibgp
+   neighbor 10.11.3.11 description LEAF02
+   neighbor 10.11.3.13 peer group underlay_ibgp
+   neighbor 10.11.3.13 description BLEAF01
+   neighbor 10.11.3.15 peer group underlay_ibgp
+   neighbor 10.11.3.15 description BLEAF02
    !
    address-family evpn
-      neighbor OVERLAY activate
+      neighbor EVPN activate
    !
    address-family ipv4
-      neighbor 10.11.3.41 activate
-      neighbor 10.11.3.43 activate
-      neighbor 10.11.3.45 activate
-      neighbor 10.11.3.47 activate
-      neighbor 10.11.3.49 activate
-      neighbor 10.11.3.51 activate
-      neighbor 10.11.3.53 activate
-      neighbor 10.11.3.55 activate
-      neighbor 10.11.3.57 activate
-      neighbor 10.11.3.59 activate
+      no neighbor EVPN activate
+      neighbor underlay_ibgp activate
       network 10.11.1.2/32
       network 10.11.3.0/24
       graceful-restart
 !
 end
-dc01-pod01-spine02#
 ```
 </details> 
 
 <details>
-  <summary>LEAF01 </summary>
+  <summary>dc01-leaf01 </summary>
 
 ```
-dc01-pod01-leaf01#show running-config
+dc01-leaf01#show running-config
 ! Command: show running-config
-! device: dc01-pod01-leaf01 (vEOS-lab, EOS-4.29.2F)
+! device: dc01-leaf01 (vEOS-lab, EOS-4.29.2F)
 !
 ! boot system flash:/vEOS-lab.swi
 !
@@ -486,80 +266,56 @@ service routing protocols model multi-agent
 !
 logging synchronous level critical
 !
-hostname dc01-pod01-leaf01
+hostname dc01-leaf01
 !
 spanning-tree mode mstp
 no spanning-tree vlan-id 4000-4001
 !
-vlan 10
-   name =VLAN_10_test=
+vlan 101
+   name =VLAN_101_RED=
 !
-vlan 20
-   name =VLAN20_Assimetric_IRB=
-!
-vlan 30
-   name =VLAN_30_Symmetric_IRB_SVI_L3VNI
-!
-vlan 40
-   name =VLAN_40_Symmetric_IRB_L3VNI=
+vlan 102
+   name =VLAN_102_RED=
 !
 vlan 201
-   name TEST_Connect
-   trunk group MLAG_Peer
+   name =VLAN_201_GREEN=
 !
 vlan 202
+   name =VLAN_202_GREEN=
 !
-vlan 301
-   name GREEN
-!
-vlan 302
-   name RED
-!
-vlan 4000
-   name =MLAG_Peer_VLAN=
-   trunk group MLAG_Peer
-!
-vlan 4001
-   name -VLAN_LEAF-to_LEAF
-   trunk group MLAG_Peer
-!
-vrf instance CUSTOMER_L3VNI
+vlan 333
+   name CLIENTs
 !
 vrf instance GREEN
 !
 vrf instance RED
 !
-interface Port-Channel4000
-   description =MLAG_Peer=
+interface Port-Channel1
+   description =For_Clients=
+   switchport trunk allowed vlan 101-102,201-202,333
    switchport mode trunk
-   switchport trunk group MLAG_Peer
-   spanning-tree link-type point-to-point
+   !
+   evpn ethernet-segment
+      identifier 0000:babe:face:fade:bace
+      route-target import ba:be:fa:ce:ba:ce
+   lacp system-id fade.babe.face
 !
 interface Ethernet1
-   description =LINK-TO_SPINE01=
+   description =LINK-TO_DC01-SPINE01=
    no switchport
    ip address 10.11.3.1/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
 !
 interface Ethernet2
-   description =LINK-TO_SPINE02=
+   description =LINK-TO_DC01-SPINE02=
    no switchport
-   ip address 10.11.3.41/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
+   ip address 10.11.3.9/31
 !
 interface Ethernet3
-   description =HOST=
-   switchport access vlan 201
+   switchport access vlan 101
 !
 interface Ethernet4
 !
 interface Ethernet5
-   description =MLAG_peer_link=
-   channel-group 4000 mode active
 !
 interface Ethernet6
 !
@@ -573,70 +329,56 @@ interface Loopback1
 interface Loopback2
    ip address 10.11.2.3/32
 !
+interface Loopback3
+   vrf RED
+   ip address 1.1.1.0/32
+!
+interface Loopback4
+   vrf GREEN
+   ip address 3.3.3.0/32
+!
 interface Management1
    ip address 172.16.0.1/24
 !
-interface Vlan10
-   ip address 10.88.88.2/24
-   ip virtual-router address 10.88.88.1/24
+interface Vlan101
+   vrf RED
+   ip address 10.88.10.2/24
+   ip virtual-router address 10.88.10.1/24
 !
-interface Vlan20
-   ip address 10.10.10.2/24
-   ip virtual-router address 10.10.10.1/24
-!
-interface Vlan30
-   vrf CUSTOMER_L3VNI
-   ip address 10.30.30.3/24
-   ip virtual-router address 10.30.30.1/24
-!
-interface Vlan40
-   vrf CUSTOMER_L3VNI
-   ip address 10.40.40.3/24
-   ip virtual-router address 10.40.40.1/24
+interface Vlan102
+   vrf RED
+   ip address 10.88.20.2/24
+   ip virtual-router address 10.88.20.1/24
 !
 interface Vlan201
-   vrf CUSTOMER_L3VNI
-   ip address 1.1.1.222/24
-   ip virtual-router address 1.1.1.254/24
-!
-interface Vlan301
    vrf GREEN
-   ip address 192.168.1.10/24
-   ip virtual-router address 192.168.1.1/24
+   ip address 10.99.10.2/24
+   ip virtual-router address 10.99.10.1/24
 !
-interface Vlan302
-   vrf RED
-   ip address 192.168.2.10/24
-   ip virtual-router address 192.168.2.1/24
+interface Vlan202
+   vrf GREEN
+   ip address 10.99.20.2/24
+   ip virtual-router address 10.99.20.1/24
 !
-interface Vlan4000
-   no autostate
-   ip address 10.40.0.254/31
-!
-interface Vlan4001
-   mtu 9214
-   ip address 10.0.3.0/31
+interface Vlan333
+   ip address virtual 192.168.0.254/24
 !
 interface Vxlan1
    description =VXLAN=
-   vxlan source-interface Loopback2
+   vxlan source-interface Loopback1
    vxlan udp-port 4789
-   vxlan vlan 10 vni 100010
-   vxlan vlan 20 vni 100020
-   vxlan vlan 30 vni 100030
-   vxlan vlan 40 vni 100040
+   vxlan vlan 101 vni 100101
+   vxlan vlan 102 vni 100102
    vxlan vlan 201 vni 100201
-   vxlan vlan 301 vni 1000301
-   vxlan vlan 302 vni 1000302
-   vxlan vrf CUSTOMER_L3VNI vni 1000777
-   vxlan vrf GREEN vni 1000888
-   vxlan vrf RED vni 1000999
+   vxlan vlan 202 vni 100202
+   vxlan vlan 333 vni 100333
+   vxlan vrf GREEN vni 1000200
+   vxlan vrf RED vni 1000100
    vxlan learn-restrict any
 !
-ip virtual-router mac-address ba:be:fa:ce:fa:de
+ip virtual-router mac-address ba:be:ba:be:ba:be
 !
 ip routing
-ip routing vrf CUSTOMER_L3VNI
 ip routing vrf GREEN
 ip routing vrf RED
 !
@@ -644,127 +386,97 @@ ip prefix-list PL_1
    seq 10 permit 10.11.1.0/24 le 32
    seq 20 permit 10.11.3.0/24 le 32
 !
-mlag configuration
-   domain-id LEAF01-02
-   local-interface Vlan4000
-   peer-address 10.40.0.255
-   peer-address heartbeat 172.16.0.2 vrf mgmt
-   peer-link Port-Channel4000
-   dual-primary detection delay 10 action errdisable all-interfaces
-!
 route-map MAP_1 permit 10
    match ip address prefix-list PL_1
 !
-router bgp 4259905000
+router bgp 65501
    router-id 10.11.1.3
    graceful-restart restart-time 300
-   maximum-paths 4 ecmp 64
+   maximum-paths 6 ecmp 64
    neighbor EVPN peer group
-   neighbor EVPN remote-as 4259840001
+   neighbor EVPN remote-as 65501
    neighbor EVPN update-source Loopback1
-   neighbor EVPN ebgp-multihop 3
+   neighbor EVPN password 7 FvNSlY/ujVE=
    neighbor EVPN send-community extended
-   neighbor EVPN2 peer group
-   neighbor EVPN2 remote-as 4259840002
-   neighbor EVPN2 update-source Loopback1
-   neighbor EVPN2 ebgp-multihop 3
-   neighbor EVPN2 send-community extended
    neighbor underlay_ibgp peer group
-   neighbor underlay_ibgp remote-as 4259905001
+   neighbor underlay_ibgp remote-as 65501
+   neighbor underlay_ibgp route-map MAP_1 in
+   neighbor underlay_ibgp password 7 e620vg94KQ0=
    neighbor underlay_ibgp maximum-routes 12000 warning-only
-   neighbor 10.0.3.1 peer group underlay_ibgp
    neighbor 10.11.1.1 peer group EVPN
    neighbor 10.11.1.1 description SPINE01_Lo1
-   neighbor 10.11.1.2 peer group EVPN2
+   neighbor 10.11.1.2 peer group EVPN
    neighbor 10.11.1.2 description SPINE02_Lo1
-   neighbor 10.11.3.0 remote-as 4259840001
-   neighbor 10.11.3.0 bfd
+   neighbor 10.11.3.0 peer group underlay_ibgp
    neighbor 10.11.3.0 description SPINE01
-   neighbor 10.11.3.0 route-map MAP_1 in
-   neighbor 10.11.3.0 password 7 m3FjC6w2d6o=
-   neighbor 10.11.3.40 remote-as 4259840002
-   neighbor 10.11.3.40 bfd
-   neighbor 10.11.3.40 description SPINE02
-   neighbor 10.11.3.40 route-map MAP_1 in
-   neighbor 10.11.3.40 password 7 X1D+FhPL62M=
+   neighbor 10.11.3.8 peer group underlay_ibgp
+   neighbor 10.11.3.8 description SPINE02
    !
-   vlan 10
-      rd auto
-      route-target both 65001:65001
+   vlan 101
+      rd 10.11.1.3:1
+      route-target both 65501:101
       redistribute learned
       redistribute static
    !
-   vlan 20
-      rd auto
-      route-target both 65001:65001
+   vlan 102
+      rd 10.11.1.3:1
+      route-target both 65501:102
       redistribute learned
       redistribute static
    !
    vlan 201
-      rd 0.0.0.1:1
-      route-target both 100:100
+      rd 10.11.1.3:1
+      route-target both 65501:201
       redistribute learned
       redistribute static
    !
-   vlan 30
-      rd 65001:100030
-      route-target both 65001:30
+   vlan 202
+      rd 10.11.1.3:1
+      route-target both 65501:202
       redistribute learned
       redistribute static
    !
-   vlan 301
-      rd 65001:1000301
-      route-target both 301:301
-   !
-   vlan 302
-      rd 65001:1000302
-      route-target both 302:302
-   !
-   vlan 40
-      rd 65001:100040
-      route-target both 65001:40
+   vlan 333
+      rd 10.11.1.3:1
+      route-target both 65501:333
       redistribute learned
       redistribute static
    !
    address-family evpn
       neighbor EVPN activate
-      neighbor EVPN2 activate
    !
    address-family ipv4
+      no neighbor EVPN activate
+      neighbor underlay_ibgp activate
       network 10.11.1.3/32
       network 10.11.2.3/32
-      network 10.11.3.0/31
-      network 10.11.3.40/31
+      network 10.11.3.0/24
       graceful-restart
-   !
-   vrf CUSTOMER_L3VNI
-      rd 10.11.1.4:1
-      route-target import evpn 65000:1
-      route-target export evpn 65000:1
       redistribute connected
    !
    vrf GREEN
-      rd 1000888:888
-      route-target import evpn 301:1000888
-      route-target export evpn 301:1000888
-   !
+      rd 10.11.1.3:200
+      route-target import evpn 65501:1000200
+      route-target export evpn 65501:1000200
+      redistribute connected
+ !
    vrf RED
-      rd 1000999:999
-      route-target import evpn 302:1000999
-      route-target export evpn 302:1000999
+      rd 10.11.1.3:100
+      route-target import evpn 65501:1000100
+      route-target export evpn 65501:1000100
+      redistribute connected
 !
 end
-dc01-pod01-leaf01#
 ```
 </details> 
 
 <details>
-  <summary>LEAF02 </summary>
+  <summary>dc01-leaf02 </summary>
 
 ```
-dc01-pod01-leaf02#show running-config
+dc01-leaf02#show running-config
 ! Command: show running-config
-! device: dc01-pod01-leaf02 (vEOS-lab, EOS-4.29.2F)
+! device: dc01-leaf02 (vEOS-lab, EOS-4.29.2F)
 !
 ! boot system flash:/vEOS-lab.swi
 !
@@ -776,62 +488,56 @@ service routing protocols model multi-agent
 !
 logging synchronous level critical
 !
-hostname dc01-pod01-leaf02
+hostname dc01-leaf02
 !
 spanning-tree mode mstp
 no spanning-tree vlan-id 4000-4001
 !
-vlan 10
-   name -=VLAN_10=-
+vlan 101
+   name =VLAN_101_RED=
 !
-vlan 20
+vlan 102
+   name =VLAN_102_RED=
 !
-vlan 30
-   name =VLAN_30_Symmetric_IRB_SVI_L3VNI
+vlan 201
+   name =VLAN_201_GREEN=
 !
-vlan 40
-   name =VLAN_40_Symmetric_IRB_L3VNI=
+vlan 202
+   name =VLAN_202_GREEN=
 !
-vlan 4000
-   name =MLAG_Peer_VLAN=
-   trunk group MLAG_Peer
+vlan 333
+   name Clients
 !
-vlan 4001
-   name =VLAN_LEAF_to_Leaf
-   trunk group MLAG_Peer
-   trunk group mlag-peer
+vrf instance GREEN
 !
-vrf instance CUSTOMER_L3VNI
+vrf instance RED
 !
-interface Port-Channel4000
-   description =MLAG_Peer=
+interface Port-Channel1
+   description =For_Clients=
+   switchport trunk allowed vlan 101-102,201-202
    switchport mode trunk
-   switchport trunk group MLAG_Peer
-   spanning-tree link-type point-to-point
+   !
+   evpn ethernet-segment
+      identifier 0000:babe:face:fade:bace
+      route-target import ba:be:fa:ce:ba:ce
+   lacp system-id fade.babe.face
 !
 interface Ethernet1
-   description =LINK_TO_SPINE01=
+   description =LINK-TO_DC01-SPINE01=
    no switchport
    ip address 10.11.3.3/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
 !
 interface Ethernet2
-   description =LINK_TO_SPINE02=
+   description =LINK-TO_DC01-SPINE02=
    no switchport
-   ip address 10.11.3.43/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
+   ip address 10.11.3.11/31
 !
 interface Ethernet3
+   switchport access vlan 101
 !
 interface Ethernet4
 !
 interface Ethernet5
-   description =MLAG_peer_link=
-   channel-group 4000 mode active
 !
 interface Ethernet6
 !
@@ -843,153 +549,150 @@ interface Loopback1
    ip address 10.11.1.4/32
 !
 interface Loopback2
-   ip address 10.11.2.3/32
+   ip address 10.11.2.4/32
 !
 interface Management1
    ip address 172.16.0.2/24
 !
-interface Vlan10
-   ip virtual-router address 10.88.88.1/24
+interface Vlan101
+   vrf RED
+   ip address 10.88.10.3/24
+   ip virtual-router address 10.88.10.1/24
 !
-interface Vlan20
-   ip address 10.10.10.3/24
-   ip virtual-router address 10.10.10.1/24
+interface Vlan102
+   vrf RED
+   ip address 10.88.20.3/24
+   ip virtual-router address 10.88.20.1/24
 !
-interface Vlan30
-   vrf CUSTOMER_L3VNI
-   ip address 10.30.30.2/24
-   ip virtual-router address 10.30.30.1/24
+interface Vlan201
+   vrf GREEN
+   ip address 10.99.10.3/24
+   ip virtual-router address 10.99.10.1/24
 !
-interface Vlan40
-   vrf CUSTOMER_L3VNI
-   ip address 10.40.40.2/24
-   ip virtual-router address 10.40.40.1/24
+interface Vlan202
+   vrf GREEN
+   ip address 10.99.20.3/24
+   ip virtual-router address 10.99.20.1/24
 !
-interface Vlan4000
-   ip address 10.40.0.255/31
-!
-interface Vlan4001
-   mtu 9214
-   ip address 10.0.3.1/31
+interface Vlan333
+   ip address virtual 192.168.0.254/24
 !
 interface Vxlan1
    description =VXLAN=
-   vxlan source-interface Loopback2
+   vxlan source-interface Loopback1
    vxlan udp-port 4789
-   vxlan vlan 10 vni 100010
-   vxlan vlan 20 vni 100020
-   vxlan vlan 30 vni 100030
-   vxlan vlan 40 vni 100040
-   vxlan vrf CUSTOMER_L3VNI vni 1000777
+   vxlan vlan 101 vni 100101
+   vxlan vlan 102 vni 100102
+   vxlan vlan 201 vni 100201
+   vxlan vlan 202 vni 100202
+   vxlan vlan 333 vni 100333
+   vxlan vrf GREEN vni 1000200
+   vxlan vrf RED vni 1000100
    vxlan learn-restrict any
 !
-ip virtual-router mac-address ba:be:fa:ce:fa:de
+ip virtual-router mac-address ba:be:ba:be:ba:be
 !
 ip routing
-ip routing vrf CUSTOMER_L3VNI
+ip routing vrf GREEN
+ip routing vrf RED
 !
 ip prefix-list PL_1
    seq 10 permit 10.11.1.0/24 le 32
    seq 20 permit 10.11.3.0/24 le 32
 !
-mlag configuration
-   domain-id LEAF01-02
-   local-interface Vlan4000
-   peer-address 10.40.0.254
-   peer-address heartbeat 172.16.0.1 vrf mgmt
-   peer-link Port-Channel4000
-   dual-primary detection delay 10 action errdisable all-interfaces
-!
 route-map MAP_1 permit 10
    match ip address prefix-list PL_1
 !
-router bgp 4259905001
+router bgp 65501
    router-id 10.11.1.4
    graceful-restart restart-time 300
-   maximum-paths 4 ecmp 64
+   maximum-paths 6 ecmp 64
    neighbor EVPN peer group
-   neighbor EVPN remote-as 4259840001
+   neighbor EVPN remote-as 65501
    neighbor EVPN update-source Loopback1
-   neighbor EVPN ebgp-multihop 3
+   neighbor EVPN password 7 FvNSlY/ujVE=
    neighbor EVPN send-community extended
    neighbor EVPN2 peer group
-   neighbor EVPN2 remote-as 4259840002
-   neighbor EVPN2 update-source Loopback1
-   neighbor EVPN2 ebgp-multihop 3
-   neighbor EVPN2 send-community extended
    neighbor underlay_ibgp peer group
-   neighbor underlay_ibgp remote-as 4259905000
+   neighbor underlay_ibgp remote-as 65501
+   neighbor underlay_ibgp route-map MAP_1 in
+   neighbor underlay_ibgp password 7 e620vg94KQ0=
    neighbor underlay_ibgp maximum-routes 12000 warning-only
-   neighbor 10.0.3.0 peer group underlay_ibgp
    neighbor 10.11.1.1 peer group EVPN
    neighbor 10.11.1.1 description SPINE01_Lo1
-   neighbor 10.11.1.2 peer group EVPN2
+   neighbor 10.11.1.2 peer group EVPN
    neighbor 10.11.1.2 description SPINE02_Lo1
-   neighbor 10.11.3.2 remote-as 4259840001
-   neighbor 10.11.3.2 bfd
+   neighbor 10.11.3.2 peer group underlay_ibgp
    neighbor 10.11.3.2 description SPINE01
-   neighbor 10.11.3.2 route-map MAP_1 in
-   neighbor 10.11.3.2 password 7 kZcBlBo8kLo=
-   neighbor 10.11.3.42 remote-as 4259840002
-   neighbor 10.11.3.42 bfd
-   neighbor 10.11.3.42 description SPINE02
-   neighbor 10.11.3.42 route-map MAP_1 in
-   neighbor 10.11.3.42 password 7 v+YQEIAfTLQ=
+   neighbor 10.11.3.10 peer group underlay_ibgp
+   neighbor 10.11.3.10 description SPINE02
    !
-   vlan 10
-      rd 65001:10010
-      route-target both 65001:65001
+   vlan 101
+      rd 10.11.1.4:1
+      route-target both 65501:101
       redistribute learned
       redistribute static
    !
-   vlan 20
-      rd auto
-      route-target both 65001:65001
+   vlan 102
+      rd 10.11.1.4:1
+      route-target both 65501:102
       redistribute learned
       redistribute static
    !
-   vlan 30
-      rd 65001:100030
-      route-target both 65001:30
+   vlan 201
+      rd 10.11.1.4:1
+      route-target both 65501:201
       redistribute learned
       redistribute static
    !
-   vlan 40
-      rd 65001:100040
-      route-target both 65001:40
+   vlan 202
+      rd 10.11.1.4:1
+      route-target both 65501:202
+      redistribute learned
+      redistribute static
+   !
+   vlan 333
+      rd 10.11.1.4:1
+      route-target both 65501:333
       redistribute learned
       redistribute static
    !
    address-family evpn
       neighbor EVPN activate
-      neighbor EVPN2 activate
+      no neighbor EVPN2 activate
    !
    address-family ipv4
+      no neighbor EVPN activate
+      neighbor underlay_ibgp activate
       network 10.11.1.4/32
-      network 10.11.2.3/32
-      network 10.11.3.2/31
-      network 10.11.3.42/31
+      network 10.11.2.4/32
       network 10.11.3.0/24
       graceful-restart
+      redistribute connected
    !
-   vrf CUSTOMER_L3VNI
-      rd 10.11.1.4:1
-      route-target import evpn 65000:1
-      route-target export evpn 65000:1
+   vrf GREEN
+      rd 10.11.1.4:200
+      route-target import evpn 65501:1000200
+      route-target export evpn 65501:1000200
+      redistribute connected
+   !
+   vrf RED
+      rd 10.11.1.4:100
+      route-target import evpn 65501:1000100
+      route-target export evpn 65501:1000100
       redistribute connected
 !
 end
-dc01-pod01-leaf02#
 ```
 </details> 
 
 <details>
-  <summary> LEAF03 </summary>
+  <summary> dc01-bleaf01 </summary>
 
 ```
-dc01-pod01-leaf03#show running-config
+dc01-bleaf01#show running-config
 ! Command: show running-config
-! device: dc01-pod01-leaf03 (vEOS-lab, EOS-4.29.2F)
+! device: dc01-bleaf01 (vEOS-lab, EOS-4.29.2F)
 !
 ! boot system flash:/vEOS-lab.swi
 !
@@ -1001,33 +704,32 @@ service routing protocols model multi-agent
 !
 logging synchronous level critical
 !
-hostname dc01-pod01-leaf03
+hostname dc01-bleaf01
 !
 spanning-tree mode mstp
+no spanning-tree vlan-id 4000-4001
 !
-vlan 10
-   name VLAN_10_Test
+vlan 101
+   name =VLAN_101_RED=
 !
-vlan 20
-   name =VLAN20__Assimetric_IRB=
+vlan 102
+   name =VLAN_102_RED=
 !
-vlan 201-202
-   name =ESI_CUSTOMR
+vlan 201
+   name =VLAN_201_GREEN=
 !
-vlan 301
-   name GREEN
-!
-vlan 302
-   name RED
-!
-vrf instance CUSTOMER_L3VNI
+vlan 202
+   name =VLAN_202_GREEN=
 !
 vrf instance GREEN
 !
 vrf instance RED
 !
 interface Port-Channel1
-   switchport trunk allowed vlan 201-202,301-302
+!
+interface Port-Channel10
+   description =L2_DCI=
+   switchport trunk allowed vlan 101-102,201-202,333
    switchport mode trunk
    !
    evpn ethernet-segment
@@ -1036,41 +738,68 @@ interface Port-Channel1
    lacp system-id fade.babe.face
 !
 interface Ethernet1
-   description =LINK_TO_SPINE01=
+   description =LINK-TO_DC01-SPINE01=
    mtu 9214
    no switchport
    ip address 10.11.3.5/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
 !
 interface Ethernet2
-   description =LINK_TO_SPINE02=
+   description =LINK-TO_DC01-SPINE02=
    mtu 9214
    no switchport
-   ip address 10.11.3.45/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
+   ip address 10.11.3.13/31
 !
 interface Ethernet3
-   description =TEST3=
+   description =Link_to_dc02_BLEAF01=
    mtu 9214
-   switchport access vlan 201
+   no switchport
+   vrf RED
+   ip address 10.11.4.0/31
+!
+interface Ethernet3.1
+   description =Link_to_dc02_BLEAF01_vrf_GREEN=
+   encapsulation dot1q vlan 300
+   vrf GREEN
+   ip address 10.11.4.8/31
 !
 interface Ethernet4
-   description =ESI_LAG=
+   description =Link_to_DC02-BLEAF02=
    mtu 9214
-   channel-group 1 mode active
+   channel-group 10 mode active
 !
 interface Ethernet5
+   description =Link_to_DC02-BLEAF01=
    mtu 9214
+   channel-group 10 mode active
 !
 interface Ethernet6
+   description =Link_to_DC02_BLEAF02=
    mtu 9214
+   no switchport
+   vrf RED
+   ip address 10.11.4.2/31
+!
+interface Ethernet6.1
+   description =Link_to_DC02_BLEAF02_vrf_GREEN=
+   encapsulation dot1q vlan 300
+   vrf GREEN
+   ip address 10.11.4.10/31
 !
 interface Ethernet7
    mtu 9214
+   no switchport
+!
+interface Ethernet7.1
+   description =Link_to_Internet_vrf_RED=
+   encapsulation dot1q vlan 200
+   vrf RED
+   ip address 10.11.5.0/31
+!
+interface Ethernet7.2
+   description =Link2_to_Internet_VRF_GREEN=
+   encapsulation dot1q vlan 300
+   vrf GREEN
+   ip address 10.11.6.0/31
 !
 interface Ethernet8
    mtu 9214
@@ -1082,54 +811,43 @@ interface Loopback2
    ip address 10.11.2.5/32
 !
 interface Management1
+   ip address 172.16.0.3/24
 !
-interface Vlan10
-   ip address 10.88.88.3/24
-   ip virtual-router address 10.88.88.1/24
+interface Vlan101
+   vrf RED
+   ip address 10.88.10.4/24
+   ip virtual-router address 10.88.10.1/24
 !
-interface Vlan20
-   ip address 10.10.10.3/24
-   ip virtual-router address 10.10.10.1/24
+interface Vlan102
+   vrf RED
+   ip address 10.88.20.4/24
+   ip virtual-router address 10.88.20.1/24
 !
 interface Vlan201
-   vrf CUSTOMER_L3VNI
-   ip address 1.1.1.2/24
-   ip virtual-router address 1.1.1.254/24
+   vrf GREEN
+   ip address 10.99.10.4/24
+   ip virtual-router address 10.99.10.1/24
 !
 interface Vlan202
-   vrf CUSTOMER_L3VNI
-   ip address 2.2.2.3/24
-   ip virtual-router address 2.2.2.254/24
-!
-interface Vlan301
    vrf GREEN
-   ip address 192.168.1.39/24
-   ip virtual-router address 192.168.1.1/24
-!
-interface Vlan302
-   vrf RED
-   ip address 192.168.2.39/24
-   ip virtual-router address 192.168.2.1/24
+   ip address 10.99.20.4/24
+   ip virtual-router address 10.99.20.1/24
 !
 interface Vxlan1
    description =VXLAN=
    vxlan source-interface Loopback1
    vxlan udp-port 4789
-   vxlan vlan 10 vni 100010
-   vxlan vlan 20 vni 100020
+   vxlan vlan 101 vni 100101
+   vxlan vlan 102 vni 100102
    vxlan vlan 201 vni 100201
    vxlan vlan 202 vni 100202
-   vxlan vlan 301 vni 1000301
-   vxlan vlan 302 vni 1000302
-   vxlan vrf CUSTOMER_L3VNI vni 1000777
-   vxlan vrf GREEN vni 1000888
-   vxlan vrf RED vni 1000999
+   vxlan vrf GREEN vni 1000200
+   vxlan vrf RED vni 1000100
    vxlan learn-restrict any
 !
-ip virtual-router mac-address 00:00:00:00:00:10
+ip virtual-router mac-address ba:be:ba:be:ba:be
 !
 ip routing
-ip routing vrf CUSTOMER_L3VNI
 ip routing vrf GREEN
 ip routing vrf RED
 !
@@ -1140,113 +858,112 @@ ip prefix-list PL_1
 route-map MAP_1 permit 10
    match ip address prefix-list PL_1
 !
-router bgp 4259905002
+router bgp 65501
    router-id 10.11.1.5
    graceful-restart restart-time 300
-   maximum-paths 4 ecmp 64
+   maximum-paths 6 ecmp 64
+   neighbor DCI peer group
+   neighbor DCI remote-as 65502
+   neighbor DCI password 7 UN7cMARq+fc=
    neighbor EVPN peer group
-   neighbor EVPN remote-as 4259840001
+   neighbor EVPN remote-as 65501
    neighbor EVPN update-source Loopback1
-   neighbor EVPN ebgp-multihop 3
+   neighbor EVPN password 7 FvNSlY/ujVE=
    neighbor EVPN send-community extended
-   neighbor EVPN2 peer group
-   neighbor EVPN2 remote-as 4259840002
-   neighbor EVPN2 update-source Loopback1
-   neighbor EVPN2 ebgp-multihop 3
-   neighbor EVPN2 send-community extended
+   neighbor Internet peer group
+   neighbor Internet remote-as 128001
+   neighbor Internet password 7 aJb9GCXY4tQ=
+   neighbor Internet enforce-first-as
+   neighbor underlay_ibgp peer group
+   neighbor underlay_ibgp remote-as 65501
+   neighbor underlay_ibgp route-map MAP_1 in
+   neighbor underlay_ibgp password 7 e620vg94KQ0=
+   neighbor underlay_ibgp maximum-routes 12000 warning-only
    neighbor 10.11.1.1 peer group EVPN
    neighbor 10.11.1.1 description SPINE01_Lo1
-   neighbor 10.11.1.2 peer group EVPN2
+   neighbor 10.11.1.2 peer group EVPN
    neighbor 10.11.1.2 description SPINE02_Lo1
-   neighbor 10.11.3.4 remote-as 4259840001
-   neighbor 10.11.3.4 bfd
+   neighbor 10.11.3.4 peer group underlay_ibgp
    neighbor 10.11.3.4 description SPINE01
-   neighbor 10.11.3.4 route-map MAP_1 in
-   neighbor 10.11.3.4 password 7 kGZWqyCmNl4=
-   neighbor 10.11.3.44 remote-as 4259840002
-   neighbor 10.11.3.44 bfd
-   neighbor 10.11.3.44 description SPINE02
-   neighbor 10.11.3.44 route-map MAP_1 in
-   neighbor 10.11.3.44 password 7 48bUQaGsEyA=
+   neighbor 10.11.3.12 peer group underlay_ibgp
+   neighbor 10.11.3.12 description SPINE02
+   redistribute connected
    !
-   vlan 10
-      rd auto
-      route-target both 65001:65001
+   vlan 101
+      rd 10.11.1.5:1
+      route-target both 65501:101
       redistribute learned
       redistribute static
    !
-   vlan 20
-      rd auto
-      route-target both 65001:65001
+   vlan 102
+      rd 10.11.1.5:1
+      route-target both 65501:102
       redistribute learned
       redistribute static
    !
    vlan 201
-      rd 0.0.0.1:1
-      route-target both 100:100
+      rd 10.11.1.5:1
+      route-target both 65501:201
       redistribute learned
+      redistribute static
    !
    vlan 202
-      rd 0.0.0.2:2
-      route-target both 100:100
+      rd 10.11.1.5:1
+      route-target both 65501:202
       redistribute learned
-   !
-   vlan 301
-      rd 65001:1000301
-      route-target both 301:301
-   !
-   vlan 302
-      rd 65001:1000302
-      route-target both 302:302
+      redistribute static
    !
    address-family evpn
       neighbor EVPN activate
-      neighbor EVPN2 activate
    !
    address-family ipv4
-      neighbor 10.11.3.4 activate
-      neighbor 10.11.3.44 activate
+      neighbor DCI activate
+      no neighbor EVPN activate
+      neighbor Internet activate
+      neighbor underlay_ibgp activate
       network 10.11.1.5/32
       network 10.11.2.5/32
+      network 10.11.3.0/24
+      network 10.11.4.0/24
+      network 10.11.5.0/24
+      network 10.11.6.0/24
       graceful-restart
    !
-   vrf CUSTOMER_L3VNI
-      rd 10.11.1.5:1
-      route-target import evpn 65000:1
-      route-target export evpn 65000:1
+   vrf GREEN
+      rd 10.11.1.5:200
+      route-target import evpn 65501:1000200
+      route-target export evpn 65501:1000200
+      neighbor 10.11.4.9 peer group DCI
+      neighbor 10.11.4.9 description =DC02-BLEAF01_vrf_GREEN=
+      neighbor 10.11.4.11 peer group DCI
+      neighbor 10.11.4.11 description =DC02-BLEAF02_vrf_GREEN=
+      neighbor 10.11.6.1 peer group Internet
+      neighbor 10.11.6.1 description =Link1_to_Internet_vrf_GREEN=
       redistribute connected
    !
-   vrf GREEN
-      rd 1000888:888
-      route-target import evpn 301:1000888
-      route-target export evpn 301:1000888
-      neighbor 192.168.1.200 remote-as 65500
-      neighbor 192.168.1.200 description GREEN_VRF-GW
-      !
-      address-family ipv4
-         neighbor 192.168.1.200 activate
-   !
    vrf RED
-      rd 1000999:999
-      route-target import evpn 302:1000999
-      route-target export evpn 302:1000999
-      neighbor 192.168.2.200 remote-as 65500
-      neighbor 192.168.2.200 description RED_VRF-GW
-      !
-      address-family ipv4
-         neighbor 192.168.2.200 activate
+      rd 10.11.1.5:100
+      route-target import evpn 65501:1000100
+      route-target export evpn 65501:1000100
+      neighbor 10.11.4.1 peer group DCI
+      neighbor 10.11.4.1 description =DC02-BLEAF01-
+      neighbor 10.11.4.3 peer group DCI
+      neighbor 10.11.4.3 description =DC02-BLEAF02=
+      neighbor 10.11.5.1 peer group Internet
+      neighbor 10.11.5.1 description =Link1_to_Internet_vrf_RED=
+      redistribute connected
 !
 end
 ```
 </details> 
 
 <details>
-  <summary>LEAF04 </summary>
+  <summary>dc01-bleaf02 </summary>
 
 ```
-dc01-pod01-leaf04#show running-config
+dc01-bleaf02#show running-config
 ! Command: show running-config
-! device: dc01-pod01-leaf04 (vEOS-lab, EOS-4.29.2F)
+! device: dc01-bleaf02 (vEOS-lab, EOS-4.29.2F)
 !
 ! boot system flash:/vEOS-lab.swi
 !
@@ -1258,35 +975,32 @@ service routing protocols model multi-agent
 !
 logging synchronous level critical
 !
-hostname dc01-pod01-leaf04
+hostname dc01-bleaf02
 !
 spanning-tree mode mstp
+no spanning-tree vlan-id 4000-4001
 !
-vlan 30
-   name =VLAN_30_Symmetric_IRB_SVI_L3VNI
+vlan 101
+   name =VLAN_101_RED=
 !
-vlan 40
-   name =VLAN_40_Symmetric_IRB_L3VNI=
+vlan 102
+   name =VLAN_102_RED=
 !
-vlan 201-202
-   name =LAG_Customer=
+vlan 201
+   name =VLAN_201_GREEN=
 !
-vlan 301
-   name GREEN
-!
-vlan 302
-   name RED
-!
-vlan 501-502
-!
-vrf instance CUSTOMER_L3VNI
+vlan 202
+   name =VLAN_202_GREEN=
 !
 vrf instance GREEN
 !
 vrf instance RED
 !
 interface Port-Channel1
-   switchport trunk allowed vlan 201-202,301-302
+!
+interface Port-Channel10
+   description =L2_DCI=
+   switchport trunk allowed vlan 101-102,201-202,333
    switchport mode trunk
    !
    evpn ethernet-segment
@@ -1295,40 +1009,68 @@ interface Port-Channel1
    lacp system-id fade.babe.face
 !
 interface Ethernet1
-   description =LINK_TO_SPINE01=
+   description =LINK-TO_DC01-SPINE01=
    mtu 9214
    no switchport
    ip address 10.11.3.7/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
 !
 interface Ethernet2
-   description =LINK_TO_SPINE02=
+   description =LINK-TO_DC01-SPINE02=
    mtu 9214
    no switchport
-   ip address 10.11.3.47/31
-   bfd interval 700 min-rx 500 multiplier 3
-   no ip ospf neighbor bfd
-   no isis bfd
+   ip address 10.11.3.15/31
 !
 interface Ethernet3
+   description =Link_to _DC02-BLEAF02=
    mtu 9214
-   switchport access vlan 30
+   channel-group 10 mode active
 !
 interface Ethernet4
-   description =ESI_LAG=
+   description =LINK-to_DC02_BLEAF02=
    mtu 9214
-   channel-group 1 mode active
+   no switchport
+   vrf RED
+   ip address 10.11.4.6/31
+!
+interface Ethernet4.1
+   description =LINK-to_DC02_BLEAF02=
+   encapsulation dot1q vlan 300
+   vrf GREEN
+   ip address 10.11.4.14/31
 !
 interface Ethernet5
+   description =Link_to_DC02_BLEAF01=
    mtu 9214
+   no switchport
+   vrf RED
+   ip address 10.11.4.4/31
+!
+interface Ethernet5.1
+   description =Link_to_DC02_BLEAF01=
+   encapsulation dot1q vlan 300
+   vrf GREEN
+   ip address 10.11.4.12/31
 !
 interface Ethernet6
+   description =Link_to_DC02-BLEAF01=
    mtu 9214
+   channel-group 10 mode active
 !
 interface Ethernet7
    mtu 9214
+   no switchport
+!
+interface Ethernet7.1
+   description =Link_to_Internet_vrf_RED=
+   encapsulation dot1q vlan 200
+   vrf RED
+   ip address 10.11.5.2/31
+!
+interface Ethernet7.2
+   description =Link_to_Internet_VRF_GREEN=
+   encapsulation dot1q vlan 300
+   vrf GREEN
+   ip address 10.11.6.2/31
 !
 interface Ethernet8
    mtu 9214
@@ -1336,66 +1078,47 @@ interface Ethernet8
 interface Loopback1
    ip address 10.11.1.6/32
 !
+interface Loopback2
+   ip address 10.11.2.6/32
+!
 interface Management1
+   ip address 172.16.0.4/24
 !
-interface Vlan30
-   vrf CUSTOMER_L3VNI
-   ip address 10.30.30.4/24
-   ip virtual-router address 10.30.30.1/24
+interface Vlan101
+   vrf RED
+   ip address 10.88.10.5/24
+   ip virtual-router address 10.88.10.1/24
 !
-interface Vlan40
-   vrf CUSTOMER_L3VNI
-   ip address 10.40.40.4/24
-   ip virtual-router address 10.40.40.1/24
+interface Vlan102
+   vrf RED
+   ip address 10.88.20.5/24
+   ip virtual-router address 10.88.20.1/24
 !
 interface Vlan201
-   vrf CUSTOMER_L3VNI
-   ip address 1.1.1.3/24
-   ip virtual-router address 1.1.1.254/24
+   vrf GREEN
+   ip address 10.99.10.5/24
+   ip virtual-router address 10.99.10.1/24
 !
 interface Vlan202
-   vrf CUSTOMER_L3VNI
-   ip address 2.2.2.1/24
-   ip virtual-router address 2.2.2.254/24
-!
-interface Vlan301
    vrf GREEN
-   ip address 192.168.1.40/24
-   ip virtual-router address 192.168.1.1/24
-!
-interface Vlan302
-   vrf RED
-   ip address 192.168.2.40/24
-   ip virtual-router address 192.168.2.1/24
-!
-interface Vlan501
-   vrf GREEN
-   ip address 192.168.22.40/24
-!
-interface Vlan502
-   vrf RED
-   ip address 192.168.23.40/24
+   ip address 10.99.20.5/24
+   ip virtual-router address 10.99.20.1/24
 !
 interface Vxlan1
    description =VXLAN=
    vxlan source-interface Loopback1
    vxlan udp-port 4789
-   vxlan vlan 10 vni 100010
-   vxlan vlan 30 vni 100030
-   vxlan vlan 40 vni 100040
+   vxlan vlan 101 vni 100101
+   vxlan vlan 102 vni 100102
    vxlan vlan 201 vni 100201
    vxlan vlan 202 vni 100202
-   vxlan vlan 301 vni 1000301
-   vxlan vlan 302 vni 1000302
-   vxlan vrf CUSTOMER_L3VNI vni 1000777
-   vxlan vrf GREEN vni 1000888
-   vxlan vrf RED vni 1000999
+   vxlan vrf GREEN vni 1000200
+   vxlan vrf RED vni 1000100
    vxlan learn-restrict any
 !
-ip virtual-router mac-address 00:00:00:00:00:10
+ip virtual-router mac-address ba:be:ba:be:ba:be
 !
 ip routing
-ip routing vrf CUSTOMER_L3VNI
 ip routing vrf GREEN
 ip routing vrf RED
 !
@@ -1406,116 +1129,114 @@ ip prefix-list PL_1
 route-map MAP_1 permit 10
    match ip address prefix-list PL_1
 !
-router bgp 4259905003
+router bgp 65501
    router-id 10.11.1.6
    graceful-restart restart-time 300
-   maximum-paths 4 ecmp 64
+   maximum-paths 6 ecmp 64
+   neighbor DCI peer group
+   neighbor DCI remote-as 65502
+   neighbor DCI password 7 UN7cMARq+fc=
    neighbor EVPN peer group
-   neighbor EVPN remote-as 4259840001
+   neighbor EVPN remote-as 65501
    neighbor EVPN update-source Loopback1
-   neighbor EVPN ebgp-multihop 3
+   neighbor EVPN password 7 FvNSlY/ujVE=
    neighbor EVPN send-community extended
-   neighbor EVPN2 peer group
-   neighbor EVPN2 remote-as 4259840002
-   neighbor EVPN2 update-source Loopback1
-   neighbor EVPN2 ebgp-multihop 3
-   neighbor EVPN2 send-community extended
+   neighbor Internet peer group
+   neighbor Internet remote-as 128001
+   neighbor Internet password 7 aJb9GCXY4tQ=
+   neighbor underlay_ibgp peer group
+   neighbor underlay_ibgp remote-as 65501
+   neighbor underlay_ibgp route-map MAP_1 in
+   neighbor underlay_ibgp password 7 e620vg94KQ0=
+   neighbor underlay_ibgp maximum-routes 12000 warning-only
    neighbor 10.11.1.1 peer group EVPN
    neighbor 10.11.1.1 description SPINE01_Lo1
-   neighbor 10.11.1.2 peer group EVPN2
+   neighbor 10.11.1.2 peer group EVPN
    neighbor 10.11.1.2 description SPINE02_Lo1
-   neighbor 10.11.3.6 remote-as 4259840001
-   neighbor 10.11.3.6 bfd
+   neighbor 10.11.3.6 peer group underlay_ibgp
    neighbor 10.11.3.6 description SPINE01
-   neighbor 10.11.3.6 route-map MAP_1 in
-   neighbor 10.11.3.6 password 7 JVIkOCtPnDM=
-   neighbor 10.11.3.46 remote-as 4259840002
-   neighbor 10.11.3.46 bfd
-   neighbor 10.11.3.46 description SPINE02
-   neighbor 10.11.3.46 route-map MAP_1 in
-   neighbor 10.11.3.46 password 7 2L3nuAWmD7Y=
+   neighbor 10.11.3.14 peer group underlay_ibgp
+   neighbor 10.11.3.14 description SPINE02
    !
-   vlan 201
-      rd 0.0.0.1:1
-      route-target both 100:100
-      redistribute learned
-   !
-   vlan 202
-      rd 0.0.0.2:2
-      route-target both 100:100
-      redistribute learned
-   !
-   vlan 30
-      rd 65001:100030
-      route-target both 65001:30
+   vlan 101
+      rd 10.11.1.6:1
+      route-target both 65501:101
       redistribute learned
       redistribute static
    !
-   vlan 301
-      rd 65001:1000301
-      route-target both 301:301
+   vlan 102
+      rd 10.11.1.6:1
+      route-target both 65501:102
+      redistribute learned
+      redistribute static
    !
-   vlan 302
-      rd 65001:1000302
-      route-target both 302:302
+   vlan 201
+      rd 10.11.1.6:1
+      route-target both 65501:201
+      redistribute learned
+      redistribute static
    !
-   vlan 40
-      rd 65001:100040
-      route-target both 65001:40
+   vlan 202
+      rd 10.11.1.6:1
+      route-target both 65501:202
       redistribute learned
       redistribute static
    !
    address-family evpn
       neighbor EVPN activate
-      neighbor EVPN2 activate
    !
    address-family ipv4
-      neighbor 10.11.3.6 activate
-      neighbor 10.11.3.46 activate
-      neighbor 192.168.1.200 activate
-      neighbor 192.168.2.200 activate
+      neighbor DCI activate
+      no neighbor EVPN activate
+      neighbor underlay_ibgp activate
       network 10.11.1.6/32
-      network 192.168.1.0/24
-      network 192.168.2.0/24
+      network 10.11.2.6/32
+      network 10.11.3.0/24
+      network 10.11.4.0/24
+      network 10.11.5.0/24
+      network 10.11.6.0/24
       graceful-restart
-   !
-   vrf CUSTOMER_L3VNI
-      rd 10.11.1.6:1
-      route-target import evpn 65000:1
-      route-target export evpn 65000:1
       redistribute connected
    !
    vrf GREEN
-      rd 1000888:888
-      route-target import evpn 301:1000888
-      route-target export evpn 301:1000888
-      neighbor 192.168.1.200 remote-as 65500
-      neighbor 192.168.1.200 description GREEN_VRF-GW
-      !
-      address-family ipv4
-         neighbor 192.168.1.200 activate
+      rd 10.11.1.6:200
+      route-target import evpn 65501:1000200
+      route-target export evpn 65501:1000200
+      neighbor 10.11.4.13 peer group DCI
+      neighbor 10.11.4.13 description =DC02-BLEAF01_vrf_GREEN=
+      neighbor 10.11.4.15 peer group DCI
+      neighbor 10.11.4.15 description =DC02-BLEAF02_vrf_GREEN=
+      neighbor 10.11.6.3 peer group Internet
+      neighbor 10.11.6.3 description =Link_to_Internet_vrf_GREEN=
+      redistribute connected
    !
    vrf RED
-      rd 1000999:999
-      route-target import evpn 302:1000999
-      route-target export evpn 302:1000999
-      neighbor 192.168.2.200 remote-as 65500
-      neighbor 192.168.2.200 description RED_VRF-GW
-      !
-      address-family ipv4
-         neighbor 192.168.2.200 activate
+      rd 10.11.1.6:100
+      route-target import evpn 65501:1000100
+      route-target export evpn 65501:1000100
+      neighbor 10.11.4.5 peer group DCI
+      neighbor 10.11.4.5 description =DC02_DC02-BLEAF01=
+      neighbor 10.11.4.7 peer group DCI
+      neighbor 10.11.4.7 description =DC02-BLEAF02=
+      neighbor 10.11.5.3 peer group Internet
+      neighbor 10.11.5.3 description =Link_to_Internet_vrf_RED=
+      redistribute connected
 !
 end
 ```
 </details> 
 
+
+
+## Конфигурации устройств в DataCenter2 (DC02):
+
 <details>
-  <summary> CUSTOMER </summary>
+  <summary> dc02-spine01 </summary>
 
 ```
-CUSTOMER#show running-config
+dc02-spine01#show running-config
 ! Command: show running-config
-! device: CUSTOMER (vEOS-lab, EOS-4.29.2F)
+! device: dc02-spine01 (vEOS-lab, EOS-4.29.2F)
 !
 ! boot system flash:/vEOS-lab.swi
 !
@@ -1525,44 +1246,285 @@ transceiver qsfp default-mode 4x10G
 !
 service routing protocols model multi-agent
 !
-hostname CUSTOMER
+hostname dc02-spine01
 !
 spanning-tree mode mstp
 !
-vlan 201-202
-   name TEST_ESI_LAG
-   trunk group ESI_LAG
+interface Ethernet1
+   description =LINK-TO_LEAF01=
+   no switchport
+   ip address 10.11.3.0/31
 !
-vlan 301
-   name GREEN
-   trunk group ESI_LAG
+interface Ethernet2
+   description =LINK-TO_LEAF02=
+   no switchport
+   ip address 10.11.3.2/31
 !
-vlan 302
-   name RED
-   trunk group ESI_LAG
+interface Ethernet3
+   description =LINK_TO_BLEAF01=
+   no switchport
+   ip address 10.11.3.4/31
 !
-vlan 401-402
+interface Ethernet4
+   description =LINK-TO_BLEAF02=
+   no switchport
+   ip address 10.11.3.6/31
+!
+interface Ethernet5
+!
+interface Ethernet6
+!
+interface Ethernet7
+!
+interface Ethernet8
+!
+interface Loopback1
+   ip address 10.11.1.7/32
+!
+interface Loopback2
+   ip address 10.11.2.7/32
+!
+interface Management1
+   ip address 172.16.0.244/24
+!
+ip routing
+!
+ip prefix-list PL_1
+   seq 10 permit 10.11.1.0/24 le 32
+   seq 20 permit 10.11.3.0/24 le 32
+!
+route-map MAP_1 permit 10
+   match ip address prefix-list PL_1
+!
+router bgp 65502
+   router-id 10.11.1.7
+   graceful-restart restart-time 300
+   maximum-paths 6 ecmp 64
+   neighbor EVPN peer group
+   neighbor EVPN remote-as 65502
+   neighbor EVPN update-source Loopback1
+   neighbor EVPN route-reflector-client
+   neighbor EVPN route-reflector cluster-id 10.11.1.7
+   neighbor EVPN password 7 FvNSlY/ujVE=
+   neighbor EVPN send-community extended
+   neighbor underlay_ibgp peer group
+   neighbor underlay_ibgp remote-as 65502
+   neighbor underlay_ibgp next-hop-self
+   neighbor underlay_ibgp route-reflector-client
+   neighbor underlay_ibgp route-reflector cluster-id 10.11.1.7
+   neighbor underlay_ibgp route-map MAP_1 in
+   neighbor underlay_ibgp password 7 e620vg94KQ0=
+   neighbor underlay_ibgp maximum-routes 12000 warning-only
+   neighbor 10.11.1.9 peer group EVPN
+   neighbor 10.11.1.9 description LEAF01_Lo1
+   neighbor 10.11.1.10 peer group EVPN
+   neighbor 10.11.1.10 description LEAF02_Lo1
+   neighbor 10.11.1.11 peer group EVPN
+   neighbor 10.11.1.11 description BLEAF01_Lo1
+   neighbor 10.11.1.12 peer group EVPN
+   neighbor 10.11.1.12 description BLEAF02_Lo1
+   neighbor 10.11.3.1 peer group underlay_ibgp
+   neighbor 10.11.3.1 description LEAF01
+   neighbor 10.11.3.3 peer group underlay_ibgp
+   neighbor 10.11.3.3 description LEAF02
+   neighbor 10.11.3.5 peer group underlay_ibgp
+   neighbor 10.11.3.5 description BLEAF01
+   neighbor 10.11.3.7 peer group underlay_ibgp
+   neighbor 10.11.3.7 description BLEAF02
+   !
+   address-family evpn
+      neighbor EVPN activate
+   !
+   address-family ipv4
+      no neighbor EVPN activate
+      neighbor underlay_ibgp activate
+      network 10.11.1.7/32
+      network 10.11.3.0/24
+      graceful-restart
+!
+end
+```
+</details> 
+
+
+<details>
+  <summary> dc02-spine02 </summary>
+
+```
+dc02-spine02#show running-config
+! Command: show running-config
+! device: dc02-spine02 (vEOS-lab, EOS-4.29.2F)
+!
+! boot system flash:/vEOS-lab.swi
+!
+no aaa root
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+hostname dc02-spine02
+!
+spanning-tree mode mstp
+!
+interface Ethernet1
+   description =LINK-TO_LEAF01=
+   no switchport
+   ip address 10.11.3.8/31
+!
+interface Ethernet2
+   description =LINK-TO_LEAF02=
+   no switchport
+   ip address 10.11.3.10/31
+!
+interface Ethernet3
+   description =LINK_TO_BLEAF01=
+   no switchport
+   ip address 10.11.3.12/31
+!
+interface Ethernet4
+   description =LINK-TO_BLEAF02=
+   no switchport
+   ip address 10.11.3.14/31
+!
+interface Ethernet5
+!
+interface Ethernet6
+!
+interface Ethernet7
+!
+interface Ethernet8
+!
+interface Loopback1
+   ip address 10.11.1.8/32
+!
+interface Loopback2
+   ip address 10.11.2.8/32
+!
+interface Management1
+   ip address 172.16.0.143/24
+!
+ip routing
+!
+ip prefix-list PL_1
+   seq 10 permit 10.11.1.0/24 le 32
+   seq 20 permit 10.11.3.0/24 le 32
+!
+route-map MAP_1 permit 10
+   match ip address prefix-list PL_1
+!
+router bgp 65502
+   router-id 10.11.1.8
+   graceful-restart restart-time 300
+   maximum-paths 6 ecmp 64
+   neighbor EVPN peer group
+   neighbor EVPN remote-as 65502
+   neighbor EVPN update-source Loopback1
+   neighbor EVPN route-reflector-client
+   neighbor EVPN password 7 FvNSlY/ujVE=
+   neighbor EVPN send-community extended
+   neighbor underlay_ibgp peer group
+   neighbor underlay_ibgp remote-as 65502
+   neighbor underlay_ibgp next-hop-self
+   neighbor underlay_ibgp route-reflector-client
+   neighbor underlay_ibgp route-map MAP_1 in
+   neighbor underlay_ibgp password 7 e620vg94KQ0=
+   neighbor underlay_ibgp maximum-routes 12000 warning-only
+   neighbor 10.11.1.9 peer group EVPN
+   neighbor 10.11.1.9 description LEAF01_Lo1
+   neighbor 10.11.1.10 peer group EVPN
+   neighbor 10.11.1.10 description LEAF02_Lo1
+   neighbor 10.11.1.11 peer group EVPN
+   neighbor 10.11.1.11 description BLEAF01_Lo1
+   neighbor 10.11.1.12 peer group EVPN
+   neighbor 10.11.1.12 description BLEAF02_Lo1
+   neighbor 10.11.3.9 peer group underlay_ibgp
+   neighbor 10.11.3.9 description LEAF01
+   neighbor 10.11.3.11 peer group underlay_ibgp
+   neighbor 10.11.3.11 description LEAF02
+   neighbor 10.11.3.13 peer group underlay_ibgp
+   neighbor 10.11.3.13 description BLEAF01
+   neighbor 10.11.3.15 peer group underlay_ibgp
+   neighbor 10.11.3.15 description BLEAF02
+   !
+   address-family evpn
+      neighbor EVPN activate
+   !
+   address-family ipv4
+      no neighbor EVPN activate
+      neighbor underlay_ibgp activate
+      network 10.11.1.8/32
+      network 10.11.3.0/24
+      graceful-restart
+!
+end
+```
+</details> 
+
+<details>
+  <summary> dc02-leaf01 </summary>
+
+```
+dc02-leaf01#show running-config
+! Command: show running-config
+! device: dc02-leaf01 (vEOS-lab, EOS-4.29.2F)
+!
+! boot system flash:/vEOS-lab.swi
+!
+no aaa root
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+logging synchronous level critical
+!
+hostname dc02-leaf01
+!
+spanning-tree mode mstp
+no spanning-tree vlan-id 4000-4001
+!
+vlan 101
+   name =VLAN_101_RED=
+!
+vlan 102
+   name =VLAN_102_RED=
+!
+vlan 201
+   name =VLAN_201_GREEN=
+!
+vlan 202
+   name =VLAN_202_GREEN=
+!
+vlan 333
+   name CLIENTs
 !
 vrf instance GREEN
 !
 vrf instance RED
 !
 interface Port-Channel1
+   description =For_Clients=
+   switchport trunk allowed vlan 101-102,201-202,333
    switchport mode trunk
-   switchport trunk group ESI_LAG
-   traffic-engineering
+   !
+   evpn ethernet-segment
+      identifier 0000:babe:face:fade:bace
+      route-target import ba:be:fa:ce:ba:ce
+   lacp system-id fade.babe.face
 !
 interface Ethernet1
-   description =LAG=
-   mtu 9214
-   channel-group 1 mode active
+   description =LINK-TO_DC01-SPINE01=
+   no switchport
+   ip address 10.11.3.1/31
 !
 interface Ethernet2
-   description =LAG=
-   mtu 9214
-   channel-group 1 mode active
+   description =LINK-TO_DC01-SPINE02=
+   no switchport
+   ip address 10.11.3.9/31
 !
 interface Ethernet3
+   switchport access vlan 201
 !
 interface Ethernet4
 !
@@ -1574,97 +1536,1031 @@ interface Ethernet7
 !
 interface Ethernet8
 !
-interface Loopback0
-   ip address 8.8.8.8/32
+interface Loopback1
+   ip address 10.11.1.9/32
+!
+interface Loopback2
+   ip address 10.11.2.9/32
+!
+interface Loopback3
+   vrf RED
+   ip address 2.2.2.0/32
+!
+interface Loopback4
+   vrf GREEN
+   ip address 4.4.4.0/32
 !
 interface Management1
+   ip address 172.16.0.10/24
+!
+interface Vlan101
+   vrf RED
+   ip address 10.88.10.20/24
+   ip virtual-router address 10.88.10.1/24
+!
+interface Vlan102
+   vrf RED
+   ip address 10.88.20.20/24
+   ip virtual-router address 10.88.20.1/24
 !
 interface Vlan201
-   ip address 1.1.1.1/24
+   vrf GREEN
+   ip address 10.99.10.20/24
+   ip virtual-router address 10.99.10.1/24
 !
 interface Vlan202
-   ip address 2.2.2.2/24
-!
-interface Vlan301
    vrf GREEN
-   ip address 192.168.1.200/24
+   ip address 10.99.20.20/24
+   ip virtual-router address 10.99.20.1/24
 !
-interface Vlan302
-   vrf RED
-   ip address 192.168.2.200/24
-!
-interface Vlan401
-   vrf GREEN
-   ip address 192.168.3.200/24
-!
-interface Vlan402
-   vrf RED
-   ip address 192.168.4.200/24
+interface Vlan333
+   ip address virtual 192.168.0.254/24
 !
 interface Vxlan1
-   vxlan source-interface Loopback0
+   description =VXLAN=
+   vxlan source-interface Loopback1
    vxlan udp-port 4789
-   vxlan vrf GREEN vni 20001
-   vxlan vrf RED vni 10001
+   vxlan vlan 101 vni 100101
+   vxlan vlan 102 vni 100102
+   vxlan vlan 201 vni 100201
+   vxlan vlan 202 vni 100202
+   vxlan vlan 333 vni 100333
+   vxlan vrf GREEN vni 1000200
+   vxlan vrf RED vni 1000100
+   vxlan learn-restrict any
+!
+ip virtual-router mac-address ba:be:ba:be:ba:be
 !
 ip routing
 ip routing vrf GREEN
 ip routing vrf RED
 !
-ip route 0.0.0.0/0 1.1.1.254
+ip prefix-list PL_1
+   seq 10 permit 10.11.1.0/24 le 32
+   seq 20 permit 10.11.3.0/24 le 32
 !
-route-map RM permit 10
-   match as 65500
+route-map MAP_1 permit 10
+   match ip address prefix-list PL_1
 !
-route-map RM permit 20
-   match as 4259905002
-!
-route-map RM permit 30
-   match as 4259905003
-!
-router bgp 65500
-   router-id 8.8.8.8
+router bgp 65502
+   router-id 10.11.1.9
+   graceful-restart restart-time 300
+   maximum-paths 6 ecmp 64
+   neighbor EVPN peer group
+   neighbor EVPN remote-as 65502
+   neighbor EVPN update-source Loopback1
+   neighbor EVPN password 7 FvNSlY/ujVE=
+   neighbor EVPN send-community extended
+   neighbor underlay_ibgp peer group
+   neighbor underlay_ibgp remote-as 65502
+   neighbor underlay_ibgp route-map MAP_1 in
+   neighbor underlay_ibgp password 7 e620vg94KQ0=
+   neighbor underlay_ibgp maximum-routes 12000 warning-only
+   neighbor 10.11.1.7 peer group EVPN
+   neighbor 10.11.1.7 description SPINE01_Lo1
+   neighbor 10.11.1.8 peer group EVPN
+   neighbor 10.11.1.8 description SPINE02_Lo1
+   neighbor 10.11.3.0 peer group underlay_ibgp
+   neighbor 10.11.3.0 description SPINE01
+   neighbor 10.11.3.8 peer group underlay_ibgp
+   neighbor 10.11.3.8 description SPINE02
+   !
+   vlan 101
+      rd 10.11.1.9:1
+      route-target both 65502:101
+      redistribute learned
+      redistribute static
+   !
+   vlan 102
+      rd 10.11.1.9:1
+      route-target both 65502:102
+      redistribute learned
+      redistribute static
+   !
+   vlan 201
+      rd 10.11.1.9:1
+      route-target both 65502:201
+      redistribute learned
+      redistribute static
+   !
+   vlan 202
+      rd 10.11.1.9:1
+      route-target both 65502:202
+      redistribute learned
+      redistribute static
+   !
+   vlan 333
+      rd 10.11.1.9:1
+      route-target both 65502:333
+      redistribute learned
+      redistribute static
+   !
+   address-family evpn
+      neighbor EVPN activate
+   !
+   address-family ipv4
+      no neighbor EVPN activate
+      neighbor underlay_ibgp activate
+      network 10.11.1.9/32
+      network 10.11.2.9/32
+      network 10.11.3.0/24
+      graceful-restart
+      redistribute connected
    !
    vrf GREEN
-      rd 2:2
-      route-target import evpn 10:1
-      route-target export evpn 20:1
-      neighbor 192.168.1.39 remote-as 4259905002
-      neighbor 192.168.1.40 remote-as 4259905003
-      redistribute dynamic
-      redistribute bgp leaked
-      !
-      address-family ipv4
-         neighbor 192.168.1.40 activate
-         neighbor 192.168.3.39 activate
-         network 8.8.8.8/32
-         network 192.168.1.0/24
-         redistribute connected
+      rd 10.11.1.9:200
+      route-target import evpn 65502:1000200
+      route-target export evpn 65502:1000200
+      redistribute connected
+      redistribute attached-host
    !
    vrf RED
-      rd 8.8.8.8:3
-      route-target import evpn 20:1
-      route-target export evpn 10:1
-      neighbor 192.168.2.39 remote-as 4259905002
-      neighbor 192.168.2.40 remote-as 4259905003
-      redistribute dynamic
-      redistribute bgp leaked
-      !
-      address-family ipv4
-         neighbor 192.168.2.39 activate
-         neighbor 192.168.2.40 activate
-         network 8.8.8.8/32
-         network 192.168.2.0/24
-         redistribute connected
+      rd 10.11.1.9:100
+      route-target import evpn 65502:1000100
+      route-target export evpn 65502:1000100
+      redistribute connected
+      redistribute attached-host
 !
 end
-CUSTOMER#
 ```
 </details> 
 
-## Конфигурации устройств в DataCenter2 (DC02):
+
+<details>
+  <summary> dc02-leaf02 </summary>
+
+```
+dc02-leaf02#show running-config
+! Command: show running-config
+! device: dc02-leaf02 (vEOS-lab, EOS-4.29.2F)
+!
+! boot system flash:/vEOS-lab.swi
+!
+no aaa root
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+logging synchronous level critical
+!
+hostname dc02-leaf02
+!
+spanning-tree mode mstp
+no spanning-tree vlan-id 4000-4001
+!
+vlan 101
+   name =VLAN_101_RED=
+!
+vlan 102
+   name =VLAN_102_RED=
+!
+vlan 201
+   name =VLAN_201_GREEN=
+!
+vlan 202
+   name =VLAN_202_GREEN=
+!
+vlan 333
+   name Clients
+!
+vrf instance GREEN
+!
+vrf instance RED
+!
+interface Port-Channel1
+   description =For_Clients=
+   switchport trunk allowed vlan 101-102,201-202
+   switchport mode trunk
+   !
+   evpn ethernet-segment
+      identifier 0000:babe:face:fade:bace
+      route-target import ba:be:fa:ce:ba:ce
+   lacp system-id fade.babe.face
+!
+interface Ethernet1
+   description =LINK-TO_DC01-SPINE01=
+   no switchport
+   ip address 10.11.3.3/31
+!
+interface Ethernet2
+   description =LINK-TO_DC01-SPINE02=
+   no switchport
+   ip address 10.11.3.11/31
+!
+interface Ethernet3
+   switchport access vlan 101
+!
+interface Ethernet4
+!
+interface Ethernet5
+!
+interface Ethernet6
+!
+interface Ethernet7
+!
+interface Ethernet8
+!
+interface Loopback1
+   ip address 10.11.1.10/32
+!
+interface Loopback2
+   ip address 10.11.2.10/32
+!
+interface Management1
+   ip address 172.16.0.20/24
+!
+interface Vlan101
+   vrf RED
+   ip address 10.88.10.30/24
+   ip virtual-router address 10.88.10.1/24
+!
+interface Vlan102
+   vrf RED
+   ip address 10.88.20.30/24
+   ip virtual-router address 10.88.20.1/24
+!
+interface Vlan201
+   vrf GREEN
+   ip address 10.99.10.30/24
+   ip virtual-router address 10.99.10.1/24
+!
+interface Vlan202
+   vrf GREEN
+   ip address 10.99.20.30/24
+   ip virtual-router address 10.99.20.1/24
+!
+interface Vlan333
+   ip address virtual 192.168.0.254/24
+!
+interface Vxlan1
+   description =VXLAN=
+   vxlan source-interface Loopback1
+   vxlan udp-port 4789
+   vxlan vlan 101 vni 100101
+   vxlan vlan 102 vni 100102
+   vxlan vlan 201 vni 100201
+   vxlan vlan 202 vni 100202
+   vxlan vlan 333 vni 100333
+   vxlan vrf GREEN vni 1000200
+   vxlan vrf RED vni 1000100
+   vxlan learn-restrict any
+!
+ip virtual-router mac-address ba:be:ba:be:ba:be
+!
+ip routing
+ip routing vrf GREEN
+ip routing vrf RED
+!
+ip prefix-list PL_1
+   seq 10 permit 10.11.1.0/24 le 32
+   seq 20 permit 10.11.3.0/24 le 32
+!
+route-map MAP_1 permit 10
+   match ip address prefix-list PL_1
+!
+router bgp 65502
+   router-id 10.11.1.10
+   graceful-restart restart-time 300
+   maximum-paths 6 ecmp 64
+   neighbor EVPN peer group
+   neighbor EVPN remote-as 65502
+   neighbor EVPN update-source Loopback1
+   neighbor EVPN password 7 FvNSlY/ujVE=
+   neighbor EVPN send-community extended
+   neighbor EVPN2 peer group
+   neighbor underlay_ibgp peer group
+   neighbor underlay_ibgp remote-as 65502
+   neighbor underlay_ibgp route-map MAP_1 in
+   neighbor underlay_ibgp password 7 e620vg94KQ0=
+   neighbor underlay_ibgp maximum-routes 12000 warning-only
+   neighbor 10.11.1.7 peer group EVPN
+   neighbor 10.11.1.7 description SPINE01_Lo1
+   neighbor 10.11.1.8 peer group EVPN
+   neighbor 10.11.1.8 description SPINE02_Lo1
+   neighbor 10.11.3.2 peer group underlay_ibgp
+   neighbor 10.11.3.2 description SPINE01
+   neighbor 10.11.3.10 peer group underlay_ibgp
+   neighbor 10.11.3.10 description SPINE02
+   !
+   vlan 101
+      rd 10.11.1.10:1
+      route-target both 65502:101
+      redistribute learned
+      redistribute static
+   !
+   vlan 102
+      rd 10.11.1.10:1
+      route-target both 65502:102
+      redistribute learned
+      redistribute static
+   !
+   vlan 201
+      rd 10.11.1.10:1
+      route-target both 65502:201
+      redistribute learned
+      redistribute static
+   !
+   vlan 202
+      rd 10.11.1.10:1
+      route-target both 65502:202
+      redistribute learned
+      redistribute static
+   !
+   vlan 333
+      rd 10.11.1.10:1
+      route-target both 65502:333
+      redistribute learned
+      redistribute static
+   !
+   address-family evpn
+      neighbor EVPN activate
+   !
+   address-family ipv4
+      no neighbor EVPN activate
+      neighbor underlay_ibgp activate
+      network 10.11.1.4/32
+      network 10.11.2.4/32
+      network 10.11.3.0/24
+      graceful-restart
+      redistribute connected
+   !
+   vrf GREEN
+      rd 10.11.1.10:200
+      route-target import evpn 65502:1000200
+      route-target export evpn 65502:1000200
+      redistribute connected
+   !
+   vrf RED
+      rd 10.11.1.10:100
+      route-target import evpn 65502:1000100
+      route-target export evpn 65502:1000100
+      redistribute connected
+!
+end
+```
+</details> 
 
 
+<details>
+  <summary> dc02-bleaf01 </summary>
+
+```
+dc02-bleaf01#show running-config
+! Command: show running-config
+! device: dc02-bleaf01 (vEOS-lab, EOS-4.29.2F)
+!
+! boot system flash:/vEOS-lab.swi
+!
+no aaa root
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+logging synchronous level critical
+!
+hostname dc02-bleaf01
+!
+spanning-tree mode mstp
+no spanning-tree vlan-id 4000-4001
+!
+vlan 101
+   name =VLAN_101_RED=
+!
+vlan 102
+   name =VLAN_102_RED=
+!
+vlan 201
+   name =VLAN_201_GREEN=
+!
+vlan 202
+   name =VLAN_202_GREEN=
+!
+vrf instance GREEN
+!
+vrf instance RED
+!
+interface Port-Channel10
+   description =L2_DCI=
+   switchport trunk allowed vlan 101-102,201-202,333
+   switchport mode trunk
+   !
+   evpn ethernet-segment
+      identifier 0000:babe:face:fade:bace
+      route-target import ba:be:fa:ce:ba:ce
+   lacp system-id face.face.face
+!
+interface Ethernet1
+   description =LINK-TO_DC01-SPINE01=
+   mtu 9214
+   no switchport
+   ip address 10.11.3.5/31
+!
+interface Ethernet2
+   description =LINK-TO_DC01-SPINE02=
+   mtu 9214
+   no switchport
+   ip address 10.11.3.13/31
+!
+interface Ethernet3
+   description =LINK_to_DC01_BLEAF01=
+   mtu 9214
+   no switchport
+   vrf RED
+   ip address 10.11.4.1/31
+!
+interface Ethernet3.1
+   description =LINK_to_DC01_BLEAF01=
+   encapsulation dot1q vlan 300
+   vrf GREEN
+   ip address 10.11.4.9/31
+!
+interface Ethernet4
+   description =Link_to_DC01-BLEAF01=
+   mtu 9214
+   channel-group 10 mode active
+!
+interface Ethernet5
+   description =Link_to_DC01_BLEAF02=
+   mtu 9214
+   no switchport
+   vrf RED
+   ip address 10.11.4.5/31
+!
+interface Ethernet5.1
+   description =Link_to_DC01_BLEAF02=
+   encapsulation dot1q vlan 300
+   vrf GREEN
+   ip address 10.11.4.13/31
+!
+interface Ethernet6
+   description =Link_to_DC01-BLEAF02=
+   mtu 9214
+   channel-group 10 mode active
+!
+interface Ethernet7
+   mtu 9214
+   no switchport
+!
+interface Ethernet7.1
+   description =Link_to_Internet_vrf_RED=
+   encapsulation dot1q vlan 200
+   vrf RED
+   ip address 10.11.5.4/31
+!
+interface Ethernet7.2
+   description =Link_to_Internet_VRF_GREEN=
+   encapsulation dot1q vlan 300
+   vrf GREEN
+   ip address 10.11.6.4/31
+!
+interface Ethernet8
+   mtu 9214
+!
+interface Loopback1
+   ip address 10.11.1.11/32
+!
+interface Loopback2
+   ip address 10.11.2.11/32
+!
+interface Management1
+   ip address 172.16.0.30/24
+!
+interface Vlan101
+   vrf RED
+   ip address 10.88.10.40/24
+   ip virtual-router address 10.88.10.1/24
+!
+interface Vlan102
+   vrf RED
+   ip address 10.88.20.40/24
+   ip virtual-router address 10.88.20.1/24
+!
+interface Vlan201
+   vrf GREEN
+   ip address 10.99.10.40/24
+   ip virtual-router address 10.99.10.1/24
+!
+interface Vlan202
+   vrf GREEN
+   ip address 10.99.20.40/24
+   ip virtual-router address 10.99.20.1/24
+!
+interface Vxlan1
+   description =VXLAN=
+   vxlan source-interface Loopback1
+   vxlan udp-port 4789
+   vxlan vlan 101 vni 100101
+   vxlan vlan 102 vni 100102
+   vxlan vlan 201 vni 100201
+   vxlan vlan 202 vni 100202
+   vxlan vrf GREEN vni 1000200
+   vxlan vrf RED vni 1000100
+   vxlan learn-restrict any
+!
+ip virtual-router mac-address ba:be:ba:be:ba:be
+!
+ip routing
+ip routing vrf GREEN
+ip routing vrf RED
+!
+ip prefix-list PL_1
+   seq 10 permit 10.11.1.0/24 le 32
+   seq 20 permit 10.11.3.0/24 le 32
+!
+route-map MAP_1 permit 10
+   match ip address prefix-list PL_1
+!
+router bgp 65502
+   router-id 10.11.1.11
+   graceful-restart restart-time 300
+   maximum-paths 6 ecmp 64
+   neighbor DCI peer group
+   neighbor DCI remote-as 65501
+   neighbor DCI password 7 UN7cMARq+fc=
+   neighbor EVPN peer group
+   neighbor EVPN remote-as 65502
+   neighbor EVPN update-source Loopback1
+   neighbor EVPN password 7 FvNSlY/ujVE=
+   neighbor EVPN send-community extended
+   neighbor Internet peer group
+   neighbor Internet remote-as 128001
+   neighbor Internet password 7 aJb9GCXY4tQ=
+   neighbor underlay_ibgp peer group
+   neighbor underlay_ibgp remote-as 65502
+   neighbor underlay_ibgp route-map MAP_1 in
+   neighbor underlay_ibgp password 7 e620vg94KQ0=
+   neighbor underlay_ibgp maximum-routes 12000 warning-only
+   neighbor 10.11.1.7 peer group EVPN
+   neighbor 10.11.1.7 description SPINE01_Lo1
+   neighbor 10.11.1.8 peer group EVPN
+   neighbor 10.11.1.8 description SPINE02_Lo1
+   neighbor 10.11.3.4 peer group underlay_ibgp
+   neighbor 10.11.3.4 description SPINE01
+   neighbor 10.11.3.12 peer group underlay_ibgp
+   neighbor 10.11.3.12 description SPINE02
+   !
+   vlan 101
+      rd 10.11.1.11:1
+      route-target both 65502:101
+      redistribute learned
+      redistribute static
+   !
+   vlan 102
+      rd 10.11.1.11:1
+      route-target both 65502:102
+      redistribute learned
+      redistribute static
+   !
+   vlan 201
+      rd 10.11.1.11:1
+      route-target both 65502:201
+      redistribute learned
+      redistribute static
+   !
+   vlan 202
+      rd 10.11.1.11:1
+      route-target both 65502:202
+      redistribute learned
+      redistribute static
+   !
+   address-family evpn
+      neighbor EVPN activate
+   !
+   address-family ipv4
+      neighbor DCI activate
+      no neighbor EVPN activate
+      neighbor underlay_ibgp activate
+      network 10.11.1.11/32
+      network 10.11.2.11/32
+      network 10.11.3.0/24
+      network 10.11.4.0/24
+      network 10.11.5.0/24
+      network 10.11.6.0/24
+      graceful-restart
+      redistribute connected
+   !
+   vrf GREEN
+      rd 10.11.1.11:200
+      route-target import evpn 65502:1000200
+      route-target export evpn 65502:1000200
+      neighbor 10.11.4.8 peer group DCI
+      neighbor 10.11.4.8 description =DC01-BLEAF01_vrf_GREEN=
+      neighbor 10.11.4.12 peer group DCI
+      neighbor 10.11.4.12 description =DC01-BLEAF02_vrf_GREEN=
+      neighbor 10.11.6.5 peer group Internet
+      neighbor 10.11.6.5 description =Link_to_Internet_vrf_GREEN=
+      redistribute connected
+   !
+   vrf RED
+      rd 10.11.1.11:100
+      route-target import evpn 65502:1000100
+      route-target export evpn 65502:1000100
+      neighbor 10.11.4.0 peer group DCI
+      neighbor 10.11.4.0 description =DC01_BLEAF01=
+      neighbor 10.11.4.4 peer group DCI
+      neighbor 10.11.4.4 description =DC01_BLEAF02=
+      neighbor 10.11.5.5 peer group Internet
+      neighbor 10.11.5.5 description =Link_to_Internet_vrf_RED=
+      redistribute connected
+!
+end
+```
+</details> 
+
+<details>
+  <summary> dc02-bleaf02 </summary>
+
+```
+dc02-bleaf02#show running-config
+! Command: show running-config
+! device: dc02-bleaf02 (vEOS-lab, EOS-4.29.2F)
+!
+! boot system flash:/vEOS-lab.swi
+!
+no aaa root
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+logging synchronous level critical
+!
+hostname dc02-bleaf02
+!
+spanning-tree mode mstp
+no spanning-tree vlan-id 4000-4001
+!
+vlan 101
+   name =VLAN_101_RED=
+!
+vlan 102
+   name =VLAN_102_RED=
+!
+vlan 201
+   name =VLAN_201_GREEN=
+!
+vlan 202
+   name =VLAN_202_GREEN=
+!
+vrf instance GREEN
+!
+vrf instance RED
+!
+interface Port-Channel10
+   description =L2_DCI=
+   switchport trunk allowed vlan 101-102,201-202,333
+   switchport mode trunk
+   !
+   evpn ethernet-segment
+      identifier 0000:babe:face:fade:bace
+      route-target import ba:be:fa:ce:ba:ce
+   lacp system-id face.face.face
+!
+interface Ethernet1
+   description =LINK-TO_DC01-SPINE01=
+   mtu 9214
+   no switchport
+   ip address 10.11.3.7/31
+!
+interface Ethernet2
+   description =LINK-TO_DC01-SPINE02=
+   mtu 9214
+   no switchport
+   ip address 10.11.3.15/31
+!
+interface Ethernet3
+   description =Link_to_DC01-BLEAF01=
+   mtu 9214
+   channel-group 10 mode active
+!
+interface Ethernet4
+   description =LINK_to_DC01_BLEAF01=
+   mtu 9214
+   no switchport
+   vrf RED
+   ip address 10.11.4.3/31
+!
+interface Ethernet4.1
+   description =LINK_to_DC01_BLEAF01=
+   encapsulation dot1q vlan 300
+   vrf GREEN
+   ip address 10.11.4.11/31
+!
+interface Ethernet5
+   description =Link_to_DC01-BLEAF02=
+   mtu 9214
+   channel-group 10 mode active
+!
+interface Ethernet6
+   description description =LINK_to_DC01_BLEAF02=
+   mtu 9214
+   no switchport
+   vrf RED
+   ip address 10.11.4.7/31
+!
+interface Ethernet6.1
+   description =Link_to_DC01_BLEAF02=
+   encapsulation dot1q vlan 300
+   vrf GREEN
+   ip address 10.11.4.15/31
+!
+interface Ethernet7
+   mtu 9214
+   no switchport
+!
+interface Ethernet7.1
+   description =Link_to_Internet_vrf_RED=
+   encapsulation dot1q vlan 200
+   vrf RED
+   ip address 10.11.5.6/31
+!
+interface Ethernet7.2
+   description =Link_to_Internet_VRF_GREEN=
+   encapsulation dot1q vlan 300
+   vrf GREEN
+   ip address 10.11.6.6/31
+!
+interface Ethernet8
+   mtu 9214
+!
+interface Loopback1
+   ip address 10.11.1.12/32
+!
+interface Loopback2
+   ip address 10.11.2.12/32
+!
+interface Management1
+   ip address 172.16.0.40/24
+!
+interface Vlan101
+   vrf RED
+   ip address 10.88.10.50/24
+   ip virtual-router address 10.88.10.1/24
+!
+interface Vlan102
+   vrf RED
+   ip address 10.88.20.50/24
+   ip virtual-router address 10.88.20.1/24
+!
+interface Vlan201
+   vrf GREEN
+   ip address 10.99.10.50/24
+   ip virtual-router address 10.99.10.1/24
+!
+interface Vlan202
+   vrf GREEN
+   ip address 10.99.20.50/24
+   ip virtual-router address 10.99.20.1/24
+!
+interface Vxlan1
+   description =VXLAN=
+   vxlan source-interface Loopback1
+   vxlan udp-port 4789
+   vxlan vlan 101 vni 100101
+   vxlan vlan 102 vni 100102
+   vxlan vlan 201 vni 100201
+   vxlan vlan 202 vni 100202
+   vxlan vrf GREEN vni 1000200
+   vxlan vrf RED vni 1000100
+   vxlan learn-restrict any
+!
+ip virtual-router mac-address ba:be:ba:be:ba:be
+!
+ip routing
+ip routing vrf GREEN
+ip routing vrf RED
+!
+ip prefix-list PL_1
+   seq 10 permit 10.11.1.0/24 le 32
+   seq 20 permit 10.11.3.0/24 le 32
+!
+route-map MAP_1 permit 10
+   match ip address prefix-list PL_1
+!
+router bgp 65502
+   router-id 10.11.1.12
+   graceful-restart restart-time 300
+   maximum-paths 6 ecmp 64
+   neighbor DCI peer group
+   neighbor DCI remote-as 65501
+   neighbor DCI password 7 UN7cMARq+fc=
+   neighbor EVPN peer group
+   neighbor EVPN remote-as 65502
+   neighbor EVPN update-source Loopback1
+   neighbor EVPN password 7 FvNSlY/ujVE=
+   neighbor EVPN send-community extended
+   neighbor Internet peer group
+   neighbor Internet remote-as 128001
+   neighbor Internet password 7 aJb9GCXY4tQ=
+   neighbor underlay_ibgp peer group
+   neighbor underlay_ibgp remote-as 65502
+   neighbor underlay_ibgp route-map MAP_1 in
+   neighbor underlay_ibgp password 7 e620vg94KQ0=
+   neighbor underlay_ibgp maximum-routes 12000 warning-only
+   neighbor 10.11.1.7 peer group EVPN
+   neighbor 10.11.1.7 description SPINE01_Lo1
+   neighbor 10.11.1.8 peer group EVPN
+   neighbor 10.11.1.8 description SPINE02_Lo1
+   neighbor 10.11.3.6 peer group underlay_ibgp
+   neighbor 10.11.3.6 description SPINE01
+   neighbor 10.11.3.14 peer group underlay_ibgp
+   neighbor 10.11.3.14 description SPINE02
+   !
+   vlan 101
+      rd 10.11.1.12:1
+      route-target both 65502:101
+      redistribute learned
+      redistribute static
+   !
+   vlan 102
+      rd 10.11.1.12:1
+      route-target both 65502:102
+      redistribute learned
+      redistribute static
+   !
+   vlan 201
+      rd 10.11.1.12:1
+      route-target both 65502:201
+      redistribute learned
+      redistribute static
+   !
+   vlan 202
+      rd 10.11.1.12:1
+      route-target both 65502:202
+      redistribute learned
+      redistribute static
+   !
+   address-family evpn
+      neighbor EVPN activate
+   !
+   address-family ipv4
+      neighbor DCI activate
+      no neighbor EVPN activate
+      neighbor underlay_ibgp activate
+      network 10.11.1.12/32
+      network 10.11.2.12/32
+      network 10.11.3.0/24
+      network 10.11.4.0/24
+      network 10.11.5.0/24
+      network 10.11.6.0/24
+      graceful-restart
+      redistribute connected
+   !
+   vrf GREEN
+      rd 10.11.1.12:200
+      route-target import evpn 65502:1000200
+      route-target export evpn 65502:1000200
+      neighbor 10.11.4.10 peer group DCI
+      neighbor 10.11.4.10 description =DC01-BLEAF01_vrf_GREEN=
+      neighbor 10.11.4.14 peer group DCI
+      neighbor 10.11.4.14 description =DC01-BLEAF02_vrf_GREEN=
+      neighbor 10.11.6.7 peer group Internet
+      neighbor 10.11.6.7 description =Link_to_Internet_vrf_GREEN=
+      redistribute connected
+   !
+   vrf RED
+      rd 10.11.1.12:100
+      route-target import evpn 65502:1000100
+      route-target export evpn 65502:1000100
+      neighbor 10.11.4.2 peer group DCI
+      neighbor 10.11.4.2 description DC01-BLEAF01
+      neighbor 10.11.4.6 peer group DCI
+      neighbor 10.11.4.6 description DC01-BLEAF02
+      neighbor 10.11.5.7 peer group Internet
+      neighbor 10.11.5.7 description =Link_to_Internet_vrf_RED=
+      redistribute connected
+!
+end
+
+```
+</details> 
+
+### Настройки маршрутизатора Internet
+
+<details>
+  <summary> dc02-bleaf02 </summary>
+
+```
+
+! device: Internet (vEOS-lab, EOS-4.29.2F)
+!
+! boot system flash:/vEOS-lab.swi
+!
+no aaa root
+!
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+hostname Internet
+!
+spanning-tree mode mstp
+!
+interface Ethernet1
+   no switchport
+!
+interface Ethernet1.1
+   description =Link_to_DC01-BLEAF02_vrf_RED=
+   encapsulation dot1q vlan 200
+   ip address 10.11.5.3/31
+!
+interface Ethernet1.2
+   description =Link_to_DC01-BLEAF02_vrf_GREEN=
+   encapsulation dot1q vlan 300
+   ip address 10.11.6.3/31
+!
+interface Ethernet2
+   no switchport
+!
+interface Ethernet2.1
+   description =Link_to_DC01-BLEAF01_vrf_RED=
+   encapsulation dot1q vlan 200
+   ip address 10.11.5.1/31
+!
+interface Ethernet2.2
+   !!
+   description =Link_to_DC01-BLEAF01_VRF_GREEN=
+   encapsulation dot1q vlan 300
+   ip address 10.11.6.1/31
+!
+interface Ethernet3
+   no switchport
+!
+interface Ethernet3.1
+   description =Link_to_DC02-BLEAF01_vrf_RED=
+   encapsulation dot1q vlan 200
+   ip address 10.11.5.5/31
+!
+interface Ethernet3.2
+   description =Link_to_DC02-BLEAF01_VRF_GREEN=
+   encapsulation dot1q vlan 300
+   ip address 10.11.6.5/31
+!
+interface Ethernet4
+   no switchport
+!
+interface Ethernet4.1
+   description =Link_to_DC02-BLEAF02_vrf_RED=
+   encapsulation dot1q vlan 200
+   ip address 10.11.5.7/31
+!
+interface Ethernet4.2
+   description =Link_to_DC02-BLEAF02_vrf_GREEN=
+   encapsulation dot1q vlan 300
+   ip address 10.11.6.7/31
+!
+interface Ethernet5
+!
+interface Ethernet6
+!
+interface Ethernet7
+!
+interface Ethernet8
+!
+interface Ethernet8.1
+!
+interface Loopback1
+   ip address 8.8.8.8/32
+!
+interface Management1
+!
+ip routing
+!
+router bgp 128001
+   router-id 8.8.8.8
+   graceful-restart restart-time 300
+   neighbor DC01 peer group
+   neighbor DC01 remote-as 65501
+   neighbor DC01 as-path remote-as replace out
+   neighbor DC01 password 7 TZe3enuhJ5c=
+   neighbor DC02 peer group
+   neighbor DC02 remote-as 65502
+   neighbor DC02 as-path remote-as replace out
+   neighbor DC02 password 7 NH5UY8pn9bs=
+   neighbor 10.11.5.0 peer group DC01
+   neighbor 10.11.5.2 peer group DC01
+   neighbor 10.11.5.4 peer group DC02
+   neighbor 10.11.5.6 peer group DC02
+   neighbor 10.11.6.0 peer group DC01
+   neighbor 10.11.6.2 peer group DC01
+   neighbor 10.11.6.4 peer group DC02
+   neighbor 10.11.6.6 peer group DC02
+   redistribute connected
+   !
+   address-family ipv4
+      neighbor DC01 activate
+      neighbor DC02 activate
+      network 8.8.8.8/32
+      network 10.11.5.0/24
+      network 10.11.6.0/24
+      graceful-restart
+      redistribute connected
+!
+end
+```
+</details>
 
 ### Две независимые VXLAN фабрики с iBGP в Underlay, SPINE-коммутаторы выполняют роль Route Reflector.  IP адреса линковых интерфейсов в Underlay на обеих ФАбриках настроены одинакого для упрощения конфигурации.  Все Loopback-адреса уникальные.
 ### Для обеспечения доступности loopback -интерфейсов VTEP на SPINE в underlay включена настройка next-hop-self.
@@ -1684,6 +2580,7 @@ CUSTOMER#
 ### Для дополнительной демонстрации работоспособности L2VNI создан дополнительный VLAN 333 не принадлежащий VRF RED или VRF Green  (принадлежит Global таблице маршрутизации для которой не организован L3VNI).
 
 ### Для дополнительной демонстрации работоспособности L3VNI на коммутаторе DC01_LEAF01  поднят в VRF RED Loopback интерфейс  адресом 1.1.1.0/32 и на коммутаторов DC02_LEAF01 поднят в VRF RED Loopback интерфейс  адресом 2.2.2.0/32
+### Также на коммутаторе DC01_LEAF01  поднят в VRF GREEN Loopback4 интерфейс  адресом 3.3.3.0/32 и на коммутаторов DC02_LEAF01 поднят в VRF GREEN Loopback4 интерфейс  адресом 4.4.4.0/32
 .
 ### Выход во внешние сети организован через маршрутизатор Internet, с которым поднятые BGP сессии в AF ipv4 со всех четырех Border Leaf обеих фабрик.  На маршрутизаторе Internet не выполнено разделение на VRF, что позволяет обеспечить Leaking маршрутов между VRF RED в VRF GREEN и обратно.  Также обеспечена редистрибьюция сети 8.8.8.8/32 в сторону обоих VRF обеих ФАбрик.
 
@@ -1706,8 +2603,6 @@ VPCS> ping 10.88.10.60 -t
 ```
 </details> 
 
-### Дополнительно проверим связность в VLAN 333
-
 
 ## Проверка работоспособности L3 (работает ли VRF - Hand-off) и редистрибьюции между vrf GREEN и RED.
 
@@ -1728,68 +2623,110 @@ AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Li
 
           Network                Next Hop              Metric  AIGP       LocPref Weight  Path
  * >      1.1.1.0/32             -                     -       -          -       0       i
+ *  Ec    1.1.1.0/32             10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    1.1.1.0/32             10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  * >Ec    2.2.2.0/32             10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    2.2.2.0/32             10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    2.2.2.0/32             10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    2.2.2.0/32             10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >Ec    8.8.8.8/32             10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    3.3.3.0/32             10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    3.3.3.0/32             10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    3.3.3.0/32             10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    3.3.3.0/32             10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    4.4.4.0/32             10.11.1.5             0       -          100     0       128001 65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    4.4.4.0/32             10.11.1.5             0       -          100     0       128001 65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    4.4.4.0/32             10.11.1.6             0       -          100     0       128001 65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    4.4.4.0/32             10.11.1.6             0       -          100     0       128001 65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    8.8.8.8/32             10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    8.8.8.8/32             10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    8.8.8.8/32             10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    8.8.8.8/32             10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- * >Ec    10.11.5.0/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    10.11.5.0/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    8.8.8.8/32             10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.4.0/31           10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.0/31           10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  Ec    10.11.4.0/31           10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.0/31           10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.4.2/31           10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.2/31           10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  Ec    10.11.4.2/31           10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.2/31           10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.4.4/31           10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.4/31           10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  Ec    10.11.4.4/31           10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.4/31           10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    10.11.4.6/31           10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.6/31           10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  Ec    10.11.4.6/31           10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.6/31           10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    10.11.4.8/31           10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.8/31           10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.8/31           10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.8/31           10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    10.11.4.10/31          10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.10/31          10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.10/31          10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.10/31          10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    10.11.4.12/31          10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.12/31          10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.12/31          10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.12/31          10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    10.11.4.14/31          10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.14/31          10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.14/31          10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.14/31          10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    10.11.5.0/31           10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.5.0/31           10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  Ec    10.11.5.0/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    10.11.5.0/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    10.11.5.0/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- * >Ec    10.11.5.2/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.5.2/31           10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.5.2/31           10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  Ec    10.11.5.2/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    10.11.5.2/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- *  ec    10.11.5.2/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    10.11.5.2/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- * >Ec    10.11.5.4/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.5.4/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    10.11.5.4/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    10.11.5.4/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    10.11.5.4/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- * >Ec    10.11.5.6/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    10.11.5.6/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.5.4/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.5.6/31           10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.5.6/31           10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    10.11.5.6/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    10.11.5.6/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- * >Ec    10.11.6.0/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.5.6/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.6.0/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    10.11.6.0/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    10.11.6.0/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    10.11.6.0/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- * >Ec    10.11.6.2/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.6.0/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.6.2/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    10.11.6.2/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    10.11.6.2/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    10.11.6.2/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- * >Ec    10.11.6.4/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.6.2/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.6.4/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    10.11.6.4/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    10.11.6.4/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    10.11.6.4/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- * >Ec    10.11.6.6/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.6.4/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.6.6/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    10.11.6.6/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    10.11.6.6/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    10.11.6.6/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- * >Ec    10.88.0.0/16           10.11.1.6             0       -          100     0       128001 ? Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    10.88.0.0/16           10.11.1.5             0       -          100     0       128001 ? Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- *  ec    10.88.0.0/16           10.11.1.5             0       -          100     0       128001 ? Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- *  ec    10.88.0.0/16           10.11.1.6             0       -          100     0       128001 ? Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.6.6/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  * >      10.88.10.0/24          -                     -       -          -       0       i
- *  Ec    10.88.10.0/24          10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- *  ec    10.88.10.0/24          10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- *  ec    10.88.10.0/24          10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    10.88.10.0/24          10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *        10.88.10.0/24          10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *        10.88.10.0/24          10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *        10.88.10.0/24          10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *        10.88.10.0/24          10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *        10.88.10.0/24          10.11.1.4             0       -          100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
  *        10.88.10.0/24          10.11.1.4             0       -          100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
  * >      10.88.20.0/24          -                     -       -          -       0       i
- *  Ec    10.88.20.0/24          10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- *  ec    10.88.20.0/24          10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- *  ec    10.88.20.0/24          10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    10.88.20.0/24          10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *        10.88.20.0/24          10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *        10.88.20.0/24          10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *        10.88.20.0/24          10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *        10.88.20.0/24          10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *        10.88.20.0/24          10.11.1.4             0       -          100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
  *        10.88.20.0/24          10.11.1.4             0       -          100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
- * >Ec    10.99.0.0/16           10.11.1.6             0       -          100     0       128001 ? Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    10.99.0.0/16           10.11.1.5             0       -          100     0       128001 ? Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- *  ec    10.99.0.0/16           10.11.1.5             0       -          100     0       128001 ? Or-ID: 10.11.1.5 C-LST: 10.11.1.1
- *  ec    10.99.0.0/16           10.11.1.6             0       -          100     0       128001 ? Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.99.10.0/24          10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.99.10.0/24          10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.99.10.0/24          10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.99.10.0/24          10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    10.99.20.0/24          10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.99.20.0/24          10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.99.20.0/24          10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.99.20.0/24          10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
 ```
 </details> 
 
@@ -1818,12 +2755,26 @@ Gateway of last resort is not set
  C        1.1.1.0/32 is directly connected, Loopback3
  B I      2.2.2.0/32 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
                              via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      3.3.3.0/32 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                             via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      4.4.4.0/32 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                             via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
  B I      8.8.8.8/32 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
                              via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.4.0/31 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+ B I      10.11.4.2/31 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+ B I      10.11.4.4/31 [200/0] via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.4.6/31 [200/0] via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.4.8/31 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                               via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.4.10/31 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                                via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.4.12/31 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                                via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.4.14/31 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                                via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
  B I      10.11.5.0/31 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
-                               via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
- B I      10.11.5.2/31 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
-                               via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.5.2/31 [200/0] via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
  B I      10.11.5.4/31 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
                                via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
  B I      10.11.5.6/31 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
@@ -1838,10 +2789,10 @@ Gateway of last resort is not set
                                via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
  C        10.88.10.0/24 is directly connected, Vlan101
  C        10.88.20.0/24 is directly connected, Vlan102
- B I      10.88.0.0/16 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
-                               via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
- B I      10.99.0.0/16 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
-                               via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.99.10.0/24 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                                via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.99.20.0/24 [200/0] via VTEP 10.11.1.5 VNI 1000100 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                                via VTEP 10.11.1.6 VNI 1000100 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
 ```
 </details> 
 
@@ -1865,30 +2816,59 @@ rtt min/avg/max/mdev = 149.424/168.184/194.355/19.837 ms, pipe 5, ipg/ewma 16.41
 </details> 
 
 <details>
+  <summary> dc01-leaf01#ping vrf GREEN 4.4.4.0 source 3.3.3.00 </summary>
+
+```
+
+dc01-leaf01#ping vrf GREEN 4.4.4.0 source 3.3.3.0
+PING 4.4.4.0 (4.4.4.0) from 3.3.3.0 : 72(100) bytes of data.
+80 bytes from 4.4.4.0: icmp_seq=1 ttl=62 time=96.8 ms
+80 bytes from 4.4.4.0: icmp_seq=2 ttl=62 time=94.6 ms
+80 bytes from 4.4.4.0: icmp_seq=3 ttl=62 time=95.0 ms
+80 bytes from 4.4.4.0: icmp_seq=4 ttl=62 time=126 ms
+80 bytes from 4.4.4.0: icmp_seq=5 ttl=62 time=123 ms
+
+--- 4.4.4.0 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 52ms
+rtt min/avg/max/mdev = 94.692/107.375/126.867/14.555 ms, pipe 5, ipg/ewma 13.014/103.104 ms
+```
+</details> 
+
+<details>
   <summary> dc01-leaf01#show bgp evpn route-type ip-prefix ipv4 </summary>
 
 ```
-show bgp evpn route-type ip-prefix ipv4
+dc01-leaf01#show bgp evpn route-type ip-prefix ipv4
 BGP routing table information for VRF default
-Router identifier 10.11.1.5, local AS number 65501
+Router identifier 10.11.1.3, local AS number 65501
 Route status codes: * - valid, > - active, S - Stale, E - ECMP head, e - ECMP
                     c - Contributing to ECMP, % - Pending BGP convergence
 Origin codes: i - IGP, e - EGP, ? - incomplete
 AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
 
           Network                Next Hop              Metric  LocPref Weight  Path
- * >Ec    RD: 10.11.1.3:100 ip-prefix 1.1.1.0/32
-                                 10.11.1.3             -       100     0       i Or-ID: 10.11.1.3 C-LST: 10.11.1.1
- *  ec    RD: 10.11.1.3:100 ip-prefix 1.1.1.0/32
-                                 10.11.1.3             -       100     0       i Or-ID: 10.11.1.3 C-LST: 10.11.1.1
+ * >      RD: 10.11.1.3:100 ip-prefix 1.1.1.0/32
+                                 -                     -       -       0       i
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 1.1.1.0/32
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:200 ip-prefix 1.1.1.0/32
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:100 ip-prefix 1.1.1.0/32
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:100 ip-prefix 1.1.1.0/32
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:200 ip-prefix 1.1.1.0/32
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:200 ip-prefix 1.1.1.0/32
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.5:100 ip-prefix 2.2.2.0/32
-                                 -                     -       100     0       65502 i
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:100 ip-prefix 2.2.2.0/32
-                                 -                     -       100     0       65502 i
- *        RD: 10.11.1.5:100 ip-prefix 2.2.2.0/32
-                                 -                     -       100     0       128001 65502 i
- * >      RD: 10.11.1.5:200 ip-prefix 2.2.2.0/32
-                                 -                     -       100     0       128001 65502 i
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 2.2.2.0/32
+                                 10.11.1.5             -       100     0       128001 65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:200 ip-prefix 2.2.2.0/32
+                                 10.11.1.5             -       100     0       128001 65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:100 ip-prefix 2.2.2.0/32
                                  10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:100 ip-prefix 2.2.2.0/32
@@ -1897,18 +2877,44 @@ AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Li
                                  10.11.1.6             -       100     0       128001 65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:200 ip-prefix 2.2.2.0/32
                                  10.11.1.6             -       100     0       128001 65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >      RD: 10.11.1.5:100 ip-prefix 8.8.8.8/32
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:100 ip-prefix 8.8.8.8/32
-                                 -                     -       100     0       65502 128001 i
+ * >      RD: 10.11.1.3:200 ip-prefix 3.3.3.0/32
+                                 -                     -       -       0       i
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 3.3.3.0/32
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:100 ip-prefix 3.3.3.0/32
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:100 ip-prefix 3.3.3.0/32
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:100 ip-prefix 3.3.3.0/32
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:200 ip-prefix 3.3.3.0/32
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:200 ip-prefix 3.3.3.0/32
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 4.4.4.0/32
+                                 10.11.1.5             -       100     0       128001 65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:100 ip-prefix 4.4.4.0/32
+                                 10.11.1.5             -       100     0       128001 65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 4.4.4.0/32
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:200 ip-prefix 4.4.4.0/32
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:100 ip-prefix 4.4.4.0/32
+                                 10.11.1.6             -       100     0       128001 65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:100 ip-prefix 4.4.4.0/32
+                                 10.11.1.6             -       100     0       128001 65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:200 ip-prefix 4.4.4.0/32
+                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:200 ip-prefix 4.4.4.0/32
+                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 8.8.8.8/32
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:100 ip-prefix 8.8.8.8/32
-                                 -                     -       100     0       65502 128001 i
- * >      RD: 10.11.1.5:200 ip-prefix 8.8.8.8/32
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:200 ip-prefix 8.8.8.8/32
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 8.8.8.8/32
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:200 ip-prefix 8.8.8.8/32
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:100 ip-prefix 8.8.8.8/32
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:100 ip-prefix 8.8.8.8/32
@@ -1917,18 +2923,142 @@ AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Li
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:200 ip-prefix 8.8.8.8/32
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >      RD: 10.11.1.5:100 ip-prefix 10.11.5.0/31
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:100 ip-prefix 10.11.5.0/31
-                                 -                     -       100     0       65502 128001 i
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.11.4.0/31
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:100 ip-prefix 10.11.4.0/31
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.11.4.0/31
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:200 ip-prefix 10.11.4.0/31
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:100 ip-prefix 10.11.4.0/31
+                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:100 ip-prefix 10.11.4.0/31
+                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:200 ip-prefix 10.11.4.0/31
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:200 ip-prefix 10.11.4.0/31
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.11.4.2/31
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:100 ip-prefix 10.11.4.2/31
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.11.4.2/31
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:200 ip-prefix 10.11.4.2/31
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:100 ip-prefix 10.11.4.2/31
+                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:100 ip-prefix 10.11.4.2/31
+                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:200 ip-prefix 10.11.4.2/31
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:200 ip-prefix 10.11.4.2/31
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.11.4.4/31
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:100 ip-prefix 10.11.4.4/31
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.11.4.4/31
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:200 ip-prefix 10.11.4.4/31
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:100 ip-prefix 10.11.4.4/31
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:100 ip-prefix 10.11.4.4/31
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:200 ip-prefix 10.11.4.4/31
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:200 ip-prefix 10.11.4.4/31
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.11.4.6/31
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:100 ip-prefix 10.11.4.6/31
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.11.4.6/31
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:200 ip-prefix 10.11.4.6/31
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:100 ip-prefix 10.11.4.6/31
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:100 ip-prefix 10.11.4.6/31
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:200 ip-prefix 10.11.4.6/31
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:200 ip-prefix 10.11.4.6/31
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.11.4.8/31
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:100 ip-prefix 10.11.4.8/31
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.11.4.8/31
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:200 ip-prefix 10.11.4.8/31
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:100 ip-prefix 10.11.4.8/31
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:100 ip-prefix 10.11.4.8/31
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:200 ip-prefix 10.11.4.8/31
+                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:200 ip-prefix 10.11.4.8/31
+                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.11.4.10/31
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:100 ip-prefix 10.11.4.10/31
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.11.4.10/31
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:200 ip-prefix 10.11.4.10/31
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:100 ip-prefix 10.11.4.10/31
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:100 ip-prefix 10.11.4.10/31
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:200 ip-prefix 10.11.4.10/31
+                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:200 ip-prefix 10.11.4.10/31
+                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.11.4.12/31
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:100 ip-prefix 10.11.4.12/31
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.11.4.12/31
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:200 ip-prefix 10.11.4.12/31
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:100 ip-prefix 10.11.4.12/31
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:100 ip-prefix 10.11.4.12/31
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:200 ip-prefix 10.11.4.12/31
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:200 ip-prefix 10.11.4.12/31
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.11.4.14/31
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:100 ip-prefix 10.11.4.14/31
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.11.4.14/31
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:200 ip-prefix 10.11.4.14/31
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:100 ip-prefix 10.11.4.14/31
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:100 ip-prefix 10.11.4.14/31
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:200 ip-prefix 10.11.4.14/31
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:200 ip-prefix 10.11.4.14/31
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.11.5.0/31
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:100 ip-prefix 10.11.5.0/31
-                                 -                     -       100     0       65502 128001 i
- * >      RD: 10.11.1.5:200 ip-prefix 10.11.5.0/31
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:200 ip-prefix 10.11.5.0/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.11.5.0/31
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:200 ip-prefix 10.11.5.0/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:100 ip-prefix 10.11.5.0/31
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:100 ip-prefix 10.11.5.0/31
@@ -1937,38 +3067,30 @@ AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Li
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:200 ip-prefix 10.11.5.0/31
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >      RD: 10.11.1.5:100 ip-prefix 10.11.5.2/31
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:100 ip-prefix 10.11.5.2/31
-                                 -                     -       100     0       65502 128001 i
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.11.5.2/31
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:100 ip-prefix 10.11.5.2/31
-                                 -                     -       100     0       65502 128001 i
- * >      RD: 10.11.1.5:200 ip-prefix 10.11.5.2/31
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:200 ip-prefix 10.11.5.2/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.11.5.2/31
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:200 ip-prefix 10.11.5.2/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:100 ip-prefix 10.11.5.2/31
-                                 10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:100 ip-prefix 10.11.5.2/31
-                                 10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:200 ip-prefix 10.11.5.2/31
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:200 ip-prefix 10.11.5.2/31
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >      RD: 10.11.1.5:100 ip-prefix 10.11.5.4/31
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:100 ip-prefix 10.11.5.4/31
-                                 -                     -       100     0       65502 128001 i
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.11.5.4/31
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:100 ip-prefix 10.11.5.4/31
-                                 -                     -       100     0       65502 128001 i
- * >      RD: 10.11.1.5:200 ip-prefix 10.11.5.4/31
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:200 ip-prefix 10.11.5.4/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.11.5.4/31
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:200 ip-prefix 10.11.5.4/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:100 ip-prefix 10.11.5.4/31
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:100 ip-prefix 10.11.5.4/31
@@ -1977,18 +3099,14 @@ AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Li
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:200 ip-prefix 10.11.5.4/31
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >      RD: 10.11.1.5:100 ip-prefix 10.11.5.6/31
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:100 ip-prefix 10.11.5.6/31
-                                 -                     -       100     0       65502 128001 i
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.11.5.6/31
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:100 ip-prefix 10.11.5.6/31
-                                 -                     -       100     0       65502 128001 i
- * >      RD: 10.11.1.5:200 ip-prefix 10.11.5.6/31
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:200 ip-prefix 10.11.5.6/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.11.5.6/31
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:200 ip-prefix 10.11.5.6/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:100 ip-prefix 10.11.5.6/31
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:100 ip-prefix 10.11.5.6/31
@@ -1997,18 +3115,14 @@ AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Li
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:200 ip-prefix 10.11.5.6/31
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >      RD: 10.11.1.5:100 ip-prefix 10.11.6.0/31
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:100 ip-prefix 10.11.6.0/31
-                                 -                     -       100     0       65502 128001 i
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.11.6.0/31
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:100 ip-prefix 10.11.6.0/31
-                                 -                     -       100     0       65502 128001 i
- * >      RD: 10.11.1.5:200 ip-prefix 10.11.6.0/31
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:200 ip-prefix 10.11.6.0/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.11.6.0/31
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:200 ip-prefix 10.11.6.0/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:100 ip-prefix 10.11.6.0/31
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:100 ip-prefix 10.11.6.0/31
@@ -2017,190 +3131,352 @@ AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Li
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:200 ip-prefix 10.11.6.0/31
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >      RD: 10.11.1.5:100 ip-prefix 10.11.6.2/31
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:100 ip-prefix 10.11.6.2/31
-                                 -                     -       100     0       65502 128001 i
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.11.6.2/31
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:100 ip-prefix 10.11.6.2/31
-                                 -                     -       100     0       65502 128001 i
- * >      RD: 10.11.1.5:200 ip-prefix 10.11.6.2/31
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:200 ip-prefix 10.11.6.2/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.11.6.2/31
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:200 ip-prefix 10.11.6.2/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:100 ip-prefix 10.11.6.2/31
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:100 ip-prefix 10.11.6.2/31
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:200 ip-prefix 10.11.6.2/31
-                                 10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:200 ip-prefix 10.11.6.2/31
-                                 10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >      RD: 10.11.1.5:100 ip-prefix 10.11.6.4/31
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:100 ip-prefix 10.11.6.4/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.11.6.4/31
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:100 ip-prefix 10.11.6.4/31
-                                 -                     -       100     0       65502 128001 i
- * >      RD: 10.11.1.5:200 ip-prefix 10.11.6.4/31
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:200 ip-prefix 10.11.6.4/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.11.6.4/31
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:200 ip-prefix 10.11.6.4/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:100 ip-prefix 10.11.6.4/31
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:100 ip-prefix 10.11.6.4/31
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:200 ip-prefix 10.11.6.4/31
-                                 10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:200 ip-prefix 10.11.6.4/31
-                                 10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >      RD: 10.11.1.5:100 ip-prefix 10.11.6.6/31
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:100 ip-prefix 10.11.6.6/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.11.6.6/31
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:100 ip-prefix 10.11.6.6/31
-                                 -                     -       100     0       65502 128001 i
- * >      RD: 10.11.1.5:200 ip-prefix 10.11.6.6/31
-                                 -                     -       100     0       128001 i
- *  Ec    RD: 10.11.1.5:200 ip-prefix 10.11.6.6/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.11.6.6/31
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:200 ip-prefix 10.11.6.6/31
-                                 -                     -       100     0       65502 128001 i
+                                 10.11.1.5             -       100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:100 ip-prefix 10.11.6.6/31
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:100 ip-prefix 10.11.6.6/31
                                  10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:200 ip-prefix 10.11.6.6/31
-                                 10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:200 ip-prefix 10.11.6.6/31
-                                 10.11.1.6             -       100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >      RD: 10.11.1.5:100 ip-prefix 10.88.0.0/16
-                                 -                     -       100     0       128001 ?
- *  Ec    RD: 10.11.1.5:100 ip-prefix 10.88.0.0/16
-                                 -                     -       100     0       65502 128001 ?
- *  ec    RD: 10.11.1.5:100 ip-prefix 10.88.0.0/16
-                                 -                     -       100     0       65502 128001 ?
- * >      RD: 10.11.1.5:200 ip-prefix 10.88.0.0/16
-                                 -                     -       100     0       128001 ?
- *  Ec    RD: 10.11.1.5:200 ip-prefix 10.88.0.0/16
-                                 -                     -       100     0       65502 128001 ?
- *  ec    RD: 10.11.1.5:200 ip-prefix 10.88.0.0/16
-                                 -                     -       100     0       65502 128001 ?
- * >Ec    RD: 10.11.1.6:100 ip-prefix 10.88.0.0/16
-                                 10.11.1.6             -       100     0       128001 ? Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    RD: 10.11.1.6:100 ip-prefix 10.88.0.0/16
-                                 10.11.1.6             -       100     0       128001 ? Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >Ec    RD: 10.11.1.6:200 ip-prefix 10.88.0.0/16
-                                 10.11.1.6             -       100     0       128001 ? Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    RD: 10.11.1.6:200 ip-prefix 10.88.0.0/16
-                                 10.11.1.6             -       100     0       128001 ? Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >Ec    RD: 10.11.1.3:100 ip-prefix 10.88.10.0/24
-                                 10.11.1.3             -       100     0       i Or-ID: 10.11.1.3 C-LST: 10.11.1.1
- *  ec    RD: 10.11.1.3:100 ip-prefix 10.88.10.0/24
-                                 10.11.1.3             -       100     0       i Or-ID: 10.11.1.3 C-LST: 10.11.1.1
+                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >      RD: 10.11.1.3:100 ip-prefix 10.88.10.0/24
+                                 -                     -       -       0       i
  * >Ec    RD: 10.11.1.4:100 ip-prefix 10.88.10.0/24
                                  10.11.1.4             -       100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.4:100 ip-prefix 10.88.10.0/24
                                  10.11.1.4             -       100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.5:100 ip-prefix 10.88.10.0/24
-                                 -                     -       100     0       65502 i
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:100 ip-prefix 10.88.10.0/24
-                                 -                     -       100     0       65502 i
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.88.10.0/24
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:200 ip-prefix 10.88.10.0/24
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:100 ip-prefix 10.88.10.0/24
-                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:100 ip-prefix 10.88.10.0/24
-                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >Ec    RD: 10.11.1.3:100 ip-prefix 10.88.20.0/24
-                                 10.11.1.3             -       100     0       i Or-ID: 10.11.1.3 C-LST: 10.11.1.1
- *  ec    RD: 10.11.1.3:100 ip-prefix 10.88.20.0/24
-                                 10.11.1.3             -       100     0       i Or-ID: 10.11.1.3 C-LST: 10.11.1.1
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:200 ip-prefix 10.88.10.0/24
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:200 ip-prefix 10.88.10.0/24
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >      RD: 10.11.1.3:100 ip-prefix 10.88.20.0/24
+                                 -                     -       -       0       i
  * >Ec    RD: 10.11.1.4:100 ip-prefix 10.88.20.0/24
                                  10.11.1.4             -       100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.4:100 ip-prefix 10.88.20.0/24
                                  10.11.1.4             -       100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.5:100 ip-prefix 10.88.20.0/24
-                                 -                     -       100     0       65502 i
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:100 ip-prefix 10.88.20.0/24
-                                 -                     -       100     0       65502 i
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:200 ip-prefix 10.88.20.0/24
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:200 ip-prefix 10.88.20.0/24
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:100 ip-prefix 10.88.20.0/24
-                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:100 ip-prefix 10.88.20.0/24
-                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >      RD: 10.11.1.5:100 ip-prefix 10.99.0.0/16
-                                 -                     -       100     0       128001 ?
- *  Ec    RD: 10.11.1.5:100 ip-prefix 10.99.0.0/16
-                                 -                     -       100     0       65502 128001 ?
- *  ec    RD: 10.11.1.5:100 ip-prefix 10.99.0.0/16
-                                 -                     -       100     0       65502 128001 ?
- * >      RD: 10.11.1.5:200 ip-prefix 10.99.0.0/16
-                                 -                     -       100     0       128001 ?
- *  Ec    RD: 10.11.1.5:200 ip-prefix 10.99.0.0/16
-                                 -                     -       100     0       65502 128001 ?
- *  ec    RD: 10.11.1.5:200 ip-prefix 10.99.0.0/16
-                                 -                     -       100     0       65502 128001 ?
- * >Ec    RD: 10.11.1.6:100 ip-prefix 10.99.0.0/16
-                                 10.11.1.6             -       100     0       128001 ? Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    RD: 10.11.1.6:100 ip-prefix 10.99.0.0/16
-                                 10.11.1.6             -       100     0       128001 ? Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >Ec    RD: 10.11.1.6:200 ip-prefix 10.99.0.0/16
-                                 10.11.1.6             -       100     0       128001 ? Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- *  ec    RD: 10.11.1.6:200 ip-prefix 10.99.0.0/16
-                                 10.11.1.6             -       100     0       128001 ? Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >Ec    RD: 10.11.1.3:200 ip-prefix 10.99.10.0/24
-                                 10.11.1.3             -       100     0       i Or-ID: 10.11.1.3 C-LST: 10.11.1.1
- *  ec    RD: 10.11.1.3:200 ip-prefix 10.99.10.0/24
-                                 10.11.1.3             -       100     0       i Or-ID: 10.11.1.3 C-LST: 10.11.1.1
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:200 ip-prefix 10.88.20.0/24
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:200 ip-prefix 10.88.20.0/24
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >      RD: 10.11.1.3:200 ip-prefix 10.99.10.0/24
+                                 -                     -       -       0       i
  * >Ec    RD: 10.11.1.4:200 ip-prefix 10.99.10.0/24
                                  10.11.1.4             -       100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.4:200 ip-prefix 10.99.10.0/24
                                  10.11.1.4             -       100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.99.10.0/24
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:100 ip-prefix 10.99.10.0/24
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.5:200 ip-prefix 10.99.10.0/24
-                                 -                     -       100     0       65502 i
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:200 ip-prefix 10.99.10.0/24
-                                 -                     -       100     0       65502 i
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:100 ip-prefix 10.99.10.0/24
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:100 ip-prefix 10.99.10.0/24
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:200 ip-prefix 10.99.10.0/24
-                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:200 ip-prefix 10.99.10.0/24
-                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
- * >Ec    RD: 10.11.1.3:200 ip-prefix 10.99.20.0/24
-                                 10.11.1.3             -       100     0       i Or-ID: 10.11.1.3 C-LST: 10.11.1.1
- *  ec    RD: 10.11.1.3:200 ip-prefix 10.99.20.0/24
-                                 10.11.1.3             -       100     0       i Or-ID: 10.11.1.3 C-LST: 10.11.1.1
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >      RD: 10.11.1.3:200 ip-prefix 10.99.20.0/24
+                                 -                     -       -       0       i
  * >Ec    RD: 10.11.1.4:200 ip-prefix 10.99.20.0/24
                                  10.11.1.4             -       100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.4:200 ip-prefix 10.99.20.0/24
                                  10.11.1.4             -       100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.5:100 ip-prefix 10.99.20.0/24
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.5:100 ip-prefix 10.99.20.0/24
+                                 10.11.1.5             -       100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.5:200 ip-prefix 10.99.20.0/24
-                                 -                     -       100     0       65502 i
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.5:200 ip-prefix 10.99.20.0/24
-                                 -                     -       100     0       65502 i
+                                 10.11.1.5             -       100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    RD: 10.11.1.6:100 ip-prefix 10.99.20.0/24
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    RD: 10.11.1.6:100 ip-prefix 10.99.20.0/24
+                                 10.11.1.6             -       100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  * >Ec    RD: 10.11.1.6:200 ip-prefix 10.99.20.0/24
-                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
  *  ec    RD: 10.11.1.6:200 ip-prefix 10.99.20.0/24
-                                 10.11.1.6             -       100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+                                 10.11.1.6             -       100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
 ```
 </details> 
 
-### Проверим L3 связность между фабриками и route leaking между VRF Green и RED пропинговав интерфейс DC02_LEAF01 на Фабрике№2 в vrf RED с интерфейса DC01_LEAF01 Фабрики №1 в VRF GREEN:
 
 <details>
-  <summary> dc01-bleaf01#ping vrf GREEN 10.88.20.20 source 10.99.10.4 </summary>
+  <summary> dc01-leaf01#show ip bgp vrf GREEN </summary>
 
 ```
-dc01-bleaf01#ping vrf GREEN 10.88.20.20 source 10.99.10.4
-PING 10.88.20.20 (10.88.20.20) from 10.99.10.4 : 72(100) bytes of data.
-80 bytes from 10.88.20.20: icmp_seq=1 ttl=62 time=842 ms
-80 bytes from 10.88.20.20: icmp_seq=2 ttl=62 time=837 ms
-80 bytes from 10.88.20.20: icmp_seq=3 ttl=62 time=836 ms
-80 bytes from 10.88.20.20: icmp_seq=4 ttl=62 time=906 ms
-80 bytes from 10.88.20.20: icmp_seq=5 ttl=62 time=912 ms
+dc01-leaf01#show ip bgp vrf GREEN
+BGP routing table information for VRF GREEN
+Router identifier 10.99.20.2, local AS number 65501
+Route status codes: s - suppressed contributor, * - valid, > - active, E - ECMP head, e - ECMP
+                    S - Stale, c - Contributing to ECMP, b - backup, L - labeled-unicast
+                    % - Pending BGP convergence
+Origin codes: i - IGP, e - EGP, ? - incomplete
+RPKI Origin Validation codes: V - valid, I - invalid, U - unknown
+AS Path Attributes: Or-ID - Originator ID, C-LST - Cluster List, LL Nexthop - Link Local Nexthop
 
---- 10.88.20.20 ping statistics ---
-5 packets transmitted, 5 received, 0% packet loss, time 47ms
-rtt min/avg/max/mdev = 836.440/867.047/912.667/34.717 ms, pipe 5, ipg/ewma 11.960/857.408 ms
+          Network                Next Hop              Metric  AIGP       LocPref Weight  Path
+ * >Ec    1.1.1.0/32             10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    1.1.1.0/32             10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    1.1.1.0/32             10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    1.1.1.0/32             10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    2.2.2.0/32             10.11.1.5             0       -          100     0       128001 65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    2.2.2.0/32             10.11.1.5             0       -          100     0       128001 65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    2.2.2.0/32             10.11.1.6             0       -          100     0       128001 65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    2.2.2.0/32             10.11.1.6             0       -          100     0       128001 65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >      3.3.3.0/32             -                     -       -          -       0       i
+ *  Ec    3.3.3.0/32             10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    3.3.3.0/32             10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    4.4.4.0/32             10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    4.4.4.0/32             10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    4.4.4.0/32             10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    4.4.4.0/32             10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    8.8.8.8/32             10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    8.8.8.8/32             10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    8.8.8.8/32             10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    8.8.8.8/32             10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.4.0/31           10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.0/31           10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.0/31           10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.0/31           10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.4.2/31           10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.2/31           10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.2/31           10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.2/31           10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.4.4/31           10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.4/31           10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.4/31           10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.4/31           10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.4.6/31           10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.6/31           10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.6/31           10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.6/31           10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.4.8/31           10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.8/31           10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  Ec    10.11.4.8/31           10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.8/31           10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.4.10/31          10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.10/31          10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  Ec    10.11.4.10/31          10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.10/31          10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.4.12/31          10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.12/31          10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  Ec    10.11.4.12/31          10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.12/31          10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    10.11.4.14/31          10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.4.14/31          10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  Ec    10.11.4.14/31          10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.4.14/31          10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    10.11.5.0/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.5.0/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.5.0/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.5.0/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.5.2/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.5.2/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.5.2/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.5.2/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.5.4/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.5.4/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.5.4/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.5.4/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.5.6/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.5.6/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.5.6/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.5.6/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.6.0/31           10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.6.0/31           10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  Ec    10.11.6.0/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.6.0/31           10.11.1.6             0       -          100     0       128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.6.2/31           10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.6.2/31           10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  Ec    10.11.6.2/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.6.2/31           10.11.1.5             0       -          100     0       128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ * >Ec    10.11.6.4/31           10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.6.4/31           10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.6.4/31           10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.6.4/31           10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.11.6.6/31           10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.6.6/31           10.11.1.5             0       -          100     0       65502 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.11.6.6/31           10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.11.6.6/31           10.11.1.6             0       -          100     0       65502 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.88.10.0/24          10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.88.10.0/24          10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.88.10.0/24          10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.88.10.0/24          10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >Ec    10.88.20.0/24          10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.88.20.0/24          10.11.1.5             0       -          100     0       128001 128001 i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *  ec    10.88.20.0/24          10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *  ec    10.88.20.0/24          10.11.1.6             0       -          100     0       128001 128001 i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ * >      10.99.10.0/24          -                     -       -          -       0       i
+ *        10.99.10.0/24          10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *        10.99.10.0/24          10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *        10.99.10.0/24          10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *        10.99.10.0/24          10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *        10.99.10.0/24          10.11.1.4             0       -          100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
+ *        10.99.10.0/24          10.11.1.4             0       -          100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
+ * >      10.99.20.0/24          -                     -       -          -       0       i
+ *        10.99.20.0/24          10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *        10.99.20.0/24          10.11.1.6             0       -          100     0       i Or-ID: 10.11.1.6 C-LST: 10.11.1.1
+ *        10.99.20.0/24          10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *        10.99.20.0/24          10.11.1.5             0       -          100     0       i Or-ID: 10.11.1.5 C-LST: 10.11.1.1
+ *        10.99.20.0/24          10.11.1.4             0       -          100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
+ *        10.99.20.0/24          10.11.1.4             0       -          100     0       i Or-ID: 10.11.1.4 C-LST: 10.11.1.1
+```
+</details> 
+
+<details>
+  <summary> dc01-leaf01#show ip route vrf GREEN </summary>
+
+```
+dc01-leaf01#show ip route vrf GREEN
+
+VRF: GREEN
+Codes: C - connected, S - static, K - kernel,
+       O - OSPF, IA - OSPF inter area, E1 - OSPF external type 1,
+       E2 - OSPF external type 2, N1 - OSPF NSSA external type 1,
+       N2 - OSPF NSSA external type2, B - Other BGP Routes,
+       B I - iBGP, B E - eBGP, R - RIP, I L1 - IS-IS level 1,
+       I L2 - IS-IS level 2, O3 - OSPFv3, A B - BGP Aggregate,
+       A O - OSPF Summary, NG - Nexthop Group Static Route,
+       V - VXLAN Control Service, M - Martian,
+       DH - DHCP client installed default route,
+       DP - Dynamic Policy Route, L - VRF Leaked,
+       G  - gRIBI, RC - Route Cache Route
+
+Gateway of last resort is not set
+
+ B I      1.1.1.0/32 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                             via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      2.2.2.0/32 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                             via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ C        3.3.3.0/32 is directly connected, Loopback4
+ B I      4.4.4.0/32 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                             via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      8.8.8.8/32 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                             via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.4.0/31 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                               via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.4.2/31 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                               via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.4.4/31 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                               via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.4.6/31 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                               via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.4.8/31 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+ B I      10.11.4.10/31 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+ B I      10.11.4.12/31 [200/0] via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.4.14/31 [200/0] via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.5.0/31 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                               via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.5.2/31 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                               via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.5.4/31 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                               via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.5.6/31 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                               via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.6.0/31 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+ B I      10.11.6.2/31 [200/0] via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.6.4/31 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                               via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.11.6.6/31 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                               via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.88.10.0/24 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                                via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ B I      10.88.20.0/24 [200/0] via VTEP 10.11.1.5 VNI 1000200 router-mac 50:00:00:c6:c8:d3 local-interface Vxlan1
+                                via VTEP 10.11.1.6 VNI 1000200 router-mac 50:00:00:c6:63:96 local-interface Vxlan1
+ C        10.99.10.0/24 is directly connected, Vlan201
+ C        10.99.20.0/24 is directly connected, Vlan202
+```
+</details> 
+ 
+
+### Проверим L3 связность между фабриками и route leaking между VRF Green и RED пропинговав интерфейс Loopback4 на DC02_LEAF01 на Фабрике№2 в vrf GREEN с интерфейса Loopback4 DC01_LEAF01 Фабрики №1 в VRF RED:
+
+<details>
+  <summary> dc01-leaf01#ping vrf RED 4.4.4.0 source 1.1.1.0 </summary>
+
+```
+dc01-leaf01#ping vrf RED 4.4.4.0 source 1.1.1.0
+PING 4.4.4.0 (4.4.4.0) from 1.1.1.0 : 72(100) bytes of data.
+80 bytes from 4.4.4.0: icmp_seq=1 ttl=61 time=107 ms
+80 bytes from 4.4.4.0: icmp_seq=2 ttl=61 time=129 ms
+80 bytes from 4.4.4.0: icmp_seq=3 ttl=61 time=124 ms
+80 bytes from 4.4.4.0: icmp_seq=4 ttl=61 time=132 ms
+80 bytes from 4.4.4.0: icmp_seq=5 ttl=61 time=124 ms
+
+--- 4.4.4.0 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 54ms
+rtt min/avg/max/mdev = 107.274/123.451/132.339/8.665 ms, pipe 5, ipg/ewma 13.664/115.597 ms
 ```
 </details> 
 
@@ -2210,11 +3486,12 @@ rtt min/avg/max/mdev = 836.440/867.047/912.667/34.717 ms, pipe 5, ipg/ewma 11.96
   <summary> dc01-bleaf01#traceroute vrf GREEN 10.88.20.20 source 10.99.10.4 </summary>
 
 ```
-dc01-bleaf01#traceroute vrf GREEN 10.88.20.20 source 10.99.10.4
-traceroute to 10.88.20.20 (10.88.20.20), 30 hops max, 60 byte packets
- 1  10.11.6.1 (10.11.6.1)  38.852 ms  45.358 ms  54.062 ms
- 2  10.11.5.0 (10.11.5.0)  360.667 ms  380.478 ms  392.617 ms
- 3  10.88.20.20 (10.88.20.20)  342.415 ms  352.691 ms  397.516 ms
+dc01-leaf01#traceroute vrf RED 4.4.4.0 source 1.1.1.0
+traceroute to 4.4.4.0 (4.4.4.0), 30 hops max, 60 byte packets
+ 1  10.88.20.4 (10.88.20.4)  114.655 ms  123.091 ms  138.656 ms
+ 2  10.11.5.1 (10.11.5.1)  153.507 ms  176.736 ms  187.648 ms
+ 3  10.11.6.4 (10.11.6.4)  195.399 ms  210.077 ms  214.927 ms
+ 4  4.4.4.0 (4.4.4.0)  343.283 ms  371.769 ms  388.878 ms
 ```
 </details> 
 
