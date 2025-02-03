@@ -2440,7 +2440,7 @@ end
 ### Настройки маршрутизатора Internet
 
 <details>
-  <summary> dc02-bleaf02 </summary>
+  <summary> Internet </summary>
 
 ```
 
