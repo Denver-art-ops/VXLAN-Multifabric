@@ -148,7 +148,6 @@ route-map MAP_1 permit 10
 router bgp 65501
    router-id 10.11.1.1
    graceful-restart restart-time 300
-   bgp route-reflector preserve-attributes
    maximum-paths 6 ecmp 64
    neighbor EVPN peer group
    neighbor EVPN remote-as 65501
