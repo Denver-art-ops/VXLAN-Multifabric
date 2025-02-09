@@ -379,6 +379,8 @@ interface Ethernet3
    switchport access vlan 101
 !
 interface Ethernet4
+   switchport access vlan 101
+   channel-group 1 mode active
 !
 interface Ethernet5
 !
@@ -476,36 +478,20 @@ router bgp 65501
    neighbor 10.11.3.0 description SPINE01
    neighbor 10.11.3.8 peer group underlay_ibgp
    neighbor 10.11.3.8 description SPINE02
-   !
-   vlan 101
-      rd 10.11.1.3:1
-      route-target both 65501:101
-      redistribute learned
-      redistribute static
-   !
-   vlan 102
-      rd 10.11.1.3:1
-      route-target both 65501:102
-      redistribute learned
-      redistribute static
-   !
-   vlan 201
-      rd 10.11.1.3:1
-      route-target both 65501:201
-      redistribute learned
-      redistribute static
-   !
-   vlan 202
-      rd 10.11.1.3:1
-      route-target both 65501:202
-      redistribute learned
-      redistribute static
+   redistribute connected
+   redistribute attached-host
    !
    vlan 333
       rd 10.11.1.3:1
       route-target both 65501:333
       redistribute learned
       redistribute static
+   !
+   vlan-aware-bundle ESI LAG
+      rd 10.11.1.3:100
+      route-target both 65501:100
+      redistribute learned
+      vlan 101-102,201-202
    !
    address-family evpn
       neighbor EVPN activate
@@ -524,14 +510,17 @@ router bgp 65501
       route-target import evpn 65501:1000200
       route-target export evpn 65501:1000200
       redistribute connected
- !
+      redistribute attached-host
+   !
    vrf RED
       rd 10.11.1.3:100
       route-target import evpn 65501:1000100
       route-target export evpn 65501:1000100
       redistribute connected
+      redistribute attached-host
 !
 end
+dc01-leaf01#
 ```
 </details> 
 
@@ -601,6 +590,7 @@ interface Ethernet3
    switchport access vlan 101
 !
 interface Ethernet4
+   channel-group 1 mode active
 !
 interface Ethernet5
 !
@@ -691,36 +681,18 @@ router bgp 65501
    neighbor 10.11.3.2 description SPINE01
    neighbor 10.11.3.10 peer group underlay_ibgp
    neighbor 10.11.3.10 description SPINE02
-   !
-   vlan 101
-      rd 10.11.1.4:1
-      route-target both 65501:101
-      redistribute learned
-      redistribute static
-   !
-   vlan 102
-      rd 10.11.1.4:1
-      route-target both 65501:102
-      redistribute learned
-      redistribute static
-   !
-   vlan 201
-      rd 10.11.1.4:1
-      route-target both 65501:201
-      redistribute learned
-      redistribute static
-   !
-   vlan 202
-      rd 10.11.1.4:1
-      route-target both 65501:202
-      redistribute learned
-      redistribute static
+   redistribute connected
    !
    vlan 333
       rd 10.11.1.4:1
       route-target both 65501:333
       redistribute learned
       redistribute static
+   !
+   vlan-aware-bundle ESI LAG
+      rd 10.11.1.3:100
+      route-target both 65501:100
+      vlan 101-102,201-202
    !
    address-family evpn
       neighbor EVPN activate
@@ -798,9 +770,9 @@ interface Port-Channel10
    switchport mode trunk
    !
    evpn ethernet-segment
-      identifier 0000:babe:face:fade:bace
-      route-target import ba:be:fa:ce:ba:ce
-   lacp system-id fade.babe.face
+      identifier 0000:babe:face:babe:face
+      route-target import de:ad:00:00:de:ad
+   lacp system-id dead.dead.dead
 !
 interface Ethernet1
    description =LINK-TO_DC01-SPINE01=
@@ -878,6 +850,8 @@ interface Loopback2
 interface Management1
    ip address 172.16.0.3/24
 !
+interface Vlan1
+!
 interface Vlan101
    vrf RED
    ip address 10.88.10.4/24
@@ -916,12 +890,30 @@ ip routing
 ip routing vrf GREEN
 ip routing vrf RED
 !
+ip prefix-list DC_list
+   seq 10 permit 10.99.10.0/24 ge 24
+   seq 20 permit 10.99.20.0/24 ge 24
+   seq 30 permit 3.3.3.0/32 eq 32
+   seq 40 permit 4.4.4.0/32 eq 32
+!
+ip prefix-list DC_list2
+   seq 10 permit 10.88.10.0/24 ge 24
+   seq 20 permit 10.88.20.0/24 ge 24
+   seq 30 permit 1.1.1.0/32 eq 32
+   seq 40 permit 2.2.2.0/32 eq 32
+!
 ip prefix-list PL_1
-   seq 10 permit 10.11.1.0/24 le 32
-   seq 20 permit 10.11.3.0/24 le 32
+   seq 10 permit 10.11.1.0/24 ge 32
+   seq 20 permit 10.11.3.0/24 ge 32
 !
 route-map MAP_1 permit 10
    match ip address prefix-list PL_1
+!
+route-map MAP_DC_out permit 10
+   match ip address prefix-list DC_list
+!
+route-map MAP_DC_out2 permit 10
+   match ip address prefix-list DC_list2
 !
 router bgp 65501
    router-id 10.11.1.5
@@ -938,7 +930,7 @@ router bgp 65501
    neighbor Internet peer group
    neighbor Internet remote-as 128001
    neighbor Internet password 7 aJb9GCXY4tQ=
-   neighbor Internet enforce-first-as
+   no neighbor Internet enforce-first-as
    neighbor underlay_ibgp peer group
    neighbor underlay_ibgp remote-as 65501
    neighbor underlay_ibgp route-map MAP_1 in
@@ -954,29 +946,11 @@ router bgp 65501
    neighbor 10.11.3.12 description SPINE02
    redistribute connected
    !
-   vlan 101
-      rd 10.11.1.5:1
-      route-target both 65501:101
+   vlan-aware-bundle ESI LAG
+      rd 10.11.1.5:100
+      route-target both 65501:100
       redistribute learned
-      redistribute static
-   !
-   vlan 102
-      rd 10.11.1.5:1
-      route-target both 65501:102
-      redistribute learned
-      redistribute static
-   !
-   vlan 201
-      rd 10.11.1.5:1
-      route-target both 65501:201
-      redistribute learned
-      redistribute static
-   !
-   vlan 202
-      rd 10.11.1.5:1
-      route-target both 65501:202
-      redistribute learned
-      redistribute static
+      vlan 101-102,201-202
    !
    address-family evpn
       neighbor EVPN activate
@@ -1000,11 +974,15 @@ router bgp 65501
       route-target export evpn 65501:1000200
       neighbor 10.11.4.9 peer group DCI
       neighbor 10.11.4.9 description =DC02-BLEAF01_vrf_GREEN=
+      neighbor 10.11.4.9 route-map MAP_DC_out out
       neighbor 10.11.4.11 peer group DCI
       neighbor 10.11.4.11 description =DC02-BLEAF02_vrf_GREEN=
+      neighbor 10.11.4.11 route-map MAP_DC_out out
       neighbor 10.11.6.1 peer group Internet
       neighbor 10.11.6.1 description =Link1_to_Internet_vrf_GREEN=
+      neighbor 10.11.6.1 route-map MAP_DC_out out
       redistribute connected
+      redistribute attached-host
    !
    vrf RED
       rd 10.11.1.5:100
@@ -1012,11 +990,15 @@ router bgp 65501
       route-target export evpn 65501:1000100
       neighbor 10.11.4.1 peer group DCI
       neighbor 10.11.4.1 description =DC02-BLEAF01-
+      neighbor 10.11.4.1 route-map MAP_DC_out2 out
       neighbor 10.11.4.3 peer group DCI
       neighbor 10.11.4.3 description =DC02-BLEAF02=
+      neighbor 10.11.4.3 route-map MAP_DC_out2 out
       neighbor 10.11.5.1 peer group Internet
       neighbor 10.11.5.1 description =Link1_to_Internet_vrf_RED=
+      neighbor 10.11.5.1 route-map MAP_DC_out2 out
       redistribute connected
+      redistribute attached-host
 !
 end
 ```
@@ -1051,6 +1033,8 @@ vlan 101
 vlan 102
    name =VLAN_102_RED=
 !
+vlan 200,300
+!
 vlan 201
    name =VLAN_201_GREEN=
 !
@@ -1069,9 +1053,9 @@ interface Port-Channel10
    switchport mode trunk
    !
    evpn ethernet-segment
-      identifier 0000:babe:face:fade:bace
-      route-target import ba:be:fa:ce:ba:ce
-   lacp system-id fade.babe.face
+      identifier 0000:babe:face:babe:face
+      route-target import de:ad:00:00:de:ad
+   lacp system-id dead.dead.dead
 !
 interface Ethernet1
    description =LINK-TO_DC01-SPINE01=
@@ -1187,12 +1171,30 @@ ip routing
 ip routing vrf GREEN
 ip routing vrf RED
 !
+ip prefix-list DC_list
+   seq 10 permit 10.99.10.0/24 ge 24
+   seq 20 permit 10.99.20.0/24 ge 24
+   seq 30 permit 3.3.3.0/32 eq 32
+   seq 40 permit 4.4.4.0/32 eq 32
+!
+ip prefix-list DC_list2
+   seq 10 permit 10.88.10.0/24 ge 24
+   seq 20 permit 10.88.20.0/24 ge 24
+   seq 30 permit 1.1.1.0/32 eq 32
+   seq 40 permit 2.2.2.0/32 eq 32
+!
 ip prefix-list PL_1
-   seq 10 permit 10.11.1.0/24 le 32
-   seq 20 permit 10.11.3.0/24 le 32
+   seq 10 permit 10.11.1.0/24 ge 32
+   seq 20 permit 10.11.3.0/24 ge 32
 !
 route-map MAP_1 permit 10
    match ip address prefix-list PL_1
+!
+route-map MAP_DC_out permit 10
+   match ip address prefix-list DC_list
+!
+route-map MAP_DC_out2 permit 10
+   match ip address prefix-list DC_list2
 !
 router bgp 65501
    router-id 10.11.1.6
@@ -1222,30 +1224,13 @@ router bgp 65501
    neighbor 10.11.3.6 description SPINE01
    neighbor 10.11.3.14 peer group underlay_ibgp
    neighbor 10.11.3.14 description SPINE02
+   redistribute connected
    !
-   vlan 101
-      rd 10.11.1.6:1
-      route-target both 65501:101
+   vlan-aware-bundle ESI LAG
+      rd 10.11.1.6:100
+      route-target both 65501:100
       redistribute learned
-      redistribute static
-   !
-   vlan 102
-      rd 10.11.1.6:1
-      route-target both 65501:102
-      redistribute learned
-      redistribute static
-   !
-   vlan 201
-      rd 10.11.1.6:1
-      route-target both 65501:201
-      redistribute learned
-      redistribute static
-   !
-   vlan 202
-      rd 10.11.1.6:1
-      route-target both 65501:202
-      redistribute learned
-      redistribute static
+      vlan 101-102,201-202
    !
    address-family evpn
       neighbor EVPN activate
@@ -1269,11 +1254,15 @@ router bgp 65501
       route-target export evpn 65501:1000200
       neighbor 10.11.4.13 peer group DCI
       neighbor 10.11.4.13 description =DC02-BLEAF01_vrf_GREEN=
+      neighbor 10.11.4.13 route-map MAP_DC_out out
       neighbor 10.11.4.15 peer group DCI
       neighbor 10.11.4.15 description =DC02-BLEAF02_vrf_GREEN=
+      neighbor 10.11.4.15 route-map MAP_DC_out out
       neighbor 10.11.6.3 peer group Internet
       neighbor 10.11.6.3 description =Link_to_Internet_vrf_GREEN=
+      neighbor 10.11.6.3 route-map MAP_DC_out out
       redistribute connected
+      redistribute attached-host
    !
    vrf RED
       rd 10.11.1.6:100
@@ -1281,11 +1270,15 @@ router bgp 65501
       route-target export evpn 65501:1000100
       neighbor 10.11.4.5 peer group DCI
       neighbor 10.11.4.5 description =DC02_DC02-BLEAF01=
+      neighbor 10.11.4.5 route-map MAP_DC_out2 out
       neighbor 10.11.4.7 peer group DCI
       neighbor 10.11.4.7 description =DC02-BLEAF02=
+      neighbor 10.11.4.7 route-map MAP_DC_out2 out
       neighbor 10.11.5.3 peer group Internet
       neighbor 10.11.5.3 description =Link_to_Internet_vrf_RED=
+      neighbor 10.11.5.3 route-map MAP_DC_out2 out
       redistribute connected
+      redistribute attached-host
 !
 end
 ```
@@ -1996,6 +1989,8 @@ vlan 101
 vlan 102
    name =VLAN_102_RED=
 !
+vlan 200,300
+!
 vlan 201
    name =VLAN_201_GREEN=
 !
@@ -2130,12 +2125,30 @@ ip routing
 ip routing vrf GREEN
 ip routing vrf RED
 !
+ip prefix-list DC_list
+   seq 10 permit 10.99.10.0/24 ge 24
+   seq 20 permit 10.99.20.0/24 ge 24
+   seq 30 permit 3.3.3.0/32 eq 32
+   seq 40 permit 4.4.4.0/32 eq 32
+!
+ip prefix-list DC_list2
+   seq 10 permit 10.88.10.0/24 ge 24
+   seq 20 permit 10.88.20.0/24 ge 24
+   seq 30 permit 1.1.1.0/32 eq 32
+   seq 40 permit 2.2.2.0/32 eq 32
+!
 ip prefix-list PL_1
-   seq 10 permit 10.11.1.0/24 le 32
-   seq 20 permit 10.11.3.0/24 le 32
+   seq 10 permit 10.11.1.0/24 ge 32
+   seq 20 permit 10.11.3.0/24 ge 32
 !
 route-map MAP_1 permit 10
    match ip address prefix-list PL_1
+!
+route-map MAP_DC_out permit 10
+   match ip address prefix-list DC_list
+!
+route-map MAP_DC_out2 permit 10
+   match ip address prefix-list DC_list2
 !
 router bgp 65502
    router-id 10.11.1.11
@@ -2166,29 +2179,11 @@ router bgp 65502
    neighbor 10.11.3.12 peer group underlay_ibgp
    neighbor 10.11.3.12 description SPINE02
    !
-   vlan 101
-      rd 10.11.1.11:1
-      route-target both 65502:101
+   vlan-aware-bundle ESI LAG
+      rd 10.11.1.11:100
+      route-target both 65502:100
       redistribute learned
-      redistribute static
-   !
-   vlan 102
-      rd 10.11.1.11:1
-      route-target both 65502:102
-      redistribute learned
-      redistribute static
-   !
-   vlan 201
-      rd 10.11.1.11:1
-      route-target both 65502:201
-      redistribute learned
-      redistribute static
-   !
-   vlan 202
-      rd 10.11.1.11:1
-      route-target both 65502:202
-      redistribute learned
-      redistribute static
+      vlan 101-102,201-202
    !
    address-family evpn
       neighbor EVPN activate
@@ -2212,11 +2207,15 @@ router bgp 65502
       route-target export evpn 65502:1000200
       neighbor 10.11.4.8 peer group DCI
       neighbor 10.11.4.8 description =DC01-BLEAF01_vrf_GREEN=
+      neighbor 10.11.4.8 route-map MAP_DC_out out
       neighbor 10.11.4.12 peer group DCI
       neighbor 10.11.4.12 description =DC01-BLEAF02_vrf_GREEN=
+      neighbor 10.11.4.12 route-map MAP_DC_out out
       neighbor 10.11.6.5 peer group Internet
       neighbor 10.11.6.5 description =Link_to_Internet_vrf_GREEN=
+      neighbor 10.11.6.5 route-map MAP_DC_out out
       redistribute connected
+      redistribute attached-host
    !
    vrf RED
       rd 10.11.1.11:100
@@ -2224,11 +2223,15 @@ router bgp 65502
       route-target export evpn 65502:1000100
       neighbor 10.11.4.0 peer group DCI
       neighbor 10.11.4.0 description =DC01_BLEAF01=
+      neighbor 10.11.4.0 route-map MAP_DC_out2 out
       neighbor 10.11.4.4 peer group DCI
       neighbor 10.11.4.4 description =DC01_BLEAF02=
+      neighbor 10.11.4.4 route-map MAP_DC_out2 out
       neighbor 10.11.5.5 peer group Internet
       neighbor 10.11.5.5 description =Link_to_Internet_vrf_RED=
+      neighbor 10.11.5.5 route-map MAP_DC_out2 out
       redistribute connected
+      redistribute attached-host
 !
 end
 ```
@@ -2262,6 +2265,8 @@ vlan 101
 !
 vlan 102
    name =VLAN_102_RED=
+!
+vlan 200,300
 !
 vlan 201
    name =VLAN_201_GREEN=
@@ -2397,12 +2402,30 @@ ip routing
 ip routing vrf GREEN
 ip routing vrf RED
 !
+ip prefix-list DC_list
+   seq 10 permit 10.99.10.0/24 ge 24
+   seq 20 permit 10.99.20.0/24 ge 24
+   seq 30 permit 3.3.3.0/32 eq 32
+   seq 40 permit 4.4.4.0/32 eq 32
+!
+ip prefix-list DC_list2
+   seq 10 permit 10.88.10.0/24 ge 24
+   seq 20 permit 10.88.20.0/24 ge 24
+   seq 30 permit 1.1.1.0/32 eq 32
+   seq 40 permit 2.2.2.0/32 eq 32
+!
 ip prefix-list PL_1
-   seq 10 permit 10.11.1.0/24 le 32
-   seq 20 permit 10.11.3.0/24 le 32
+   seq 10 permit 10.11.1.0/24 ge 32
+   seq 20 permit 10.11.3.0/24 ge 32
 !
 route-map MAP_1 permit 10
    match ip address prefix-list PL_1
+!
+route-map MAP_DC_out permit 10
+   match ip address prefix-list DC_list
+!
+route-map MAP_DC_out2 permit 10
+   match ip address prefix-list DC_list2
 !
 router bgp 65502
    router-id 10.11.1.12
@@ -2432,30 +2455,13 @@ router bgp 65502
    neighbor 10.11.3.6 description SPINE01
    neighbor 10.11.3.14 peer group underlay_ibgp
    neighbor 10.11.3.14 description SPINE02
+   neighbor 10.11.6.7 route-map MAP_DC_out out
    !
-   vlan 101
-      rd 10.11.1.12:1
-      route-target both 65502:101
+   vlan-aware-bundle ESI LAG
+      rd 10.11.1.12:100
+      route-target both 65502:100
       redistribute learned
-      redistribute static
-   !
-   vlan 102
-      rd 10.11.1.12:1
-      route-target both 65502:102
-      redistribute learned
-      redistribute static
-   !
-   vlan 201
-      rd 10.11.1.12:1
-      route-target both 65502:201
-      redistribute learned
-      redistribute static
-   !
-   vlan 202
-      rd 10.11.1.12:1
-      route-target both 65502:202
-      redistribute learned
-      redistribute static
+      vlan 101-102,201-202
    !
    address-family evpn
       neighbor EVPN activate
@@ -2479,11 +2485,15 @@ router bgp 65502
       route-target export evpn 65502:1000200
       neighbor 10.11.4.10 peer group DCI
       neighbor 10.11.4.10 description =DC01-BLEAF01_vrf_GREEN=
+      neighbor 10.11.4.10 route-map MAP_DC_out out
       neighbor 10.11.4.14 peer group DCI
       neighbor 10.11.4.14 description =DC01-BLEAF02_vrf_GREEN=
+      neighbor 10.11.4.14 route-map MAP_DC_out out
       neighbor 10.11.6.7 peer group Internet
       neighbor 10.11.6.7 description =Link_to_Internet_vrf_GREEN=
+      neighbor 10.11.6.7 route-map MAP_DC_out out
       redistribute connected
+      redistribute attached-host
    !
    vrf RED
       rd 10.11.1.12:100
@@ -2491,14 +2501,17 @@ router bgp 65502
       route-target export evpn 65502:1000100
       neighbor 10.11.4.2 peer group DCI
       neighbor 10.11.4.2 description DC01-BLEAF01
+      neighbor 10.11.4.2 route-map MAP_DC_out2 out
       neighbor 10.11.4.6 peer group DCI
       neighbor 10.11.4.6 description DC01-BLEAF02
+      neighbor 10.11.4.6 route-map MAP_DC_out2 out
       neighbor 10.11.5.7 peer group Internet
       neighbor 10.11.5.7 description =Link_to_Internet_vrf_RED=
+      neighbor 10.11.5.7 route-map MAP_DC_out2 out
       redistribute connected
+      redistribute attached-host
 !
 end
-
 ```
 </details> 
 
@@ -2508,7 +2521,8 @@ end
   <summary> Internet </summary>
 
 ```
-
+Internet#show running-config
+! Command: show running-config
 ! device: Internet (vEOS-lab, EOS-4.29.2F)
 !
 ! boot system flash:/vEOS-lab.swi
@@ -2596,6 +2610,7 @@ ip routing
 router bgp 128001
    router-id 8.8.8.8
    graceful-restart restart-time 300
+   maximum-paths 8 ecmp 8
    neighbor DC01 peer group
    neighbor DC01 remote-as 65501
    neighbor DC01 as-path remote-as replace out
